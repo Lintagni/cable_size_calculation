@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { X, Sparkles, Check, Zap } from 'lucide-react'
+import { DODO_PRODUCTS } from '../../config/dodoProducts'
 import clsx from 'clsx'
 import { CREDIT_PACKS, MODEL_CREDIT_WEIGHT, useAiQuotaStore } from '../../store/aiQuotaStore'
 import type { CreditPack } from '../../store/aiQuotaStore'
@@ -28,26 +29,20 @@ export default function BuyCreditsModal({ onClose }: Props) {
   const packs = CREDIT_PACKS.filter(p => p.plans.includes(plan as 'free' | 'pro' | 'business'))
   const selectedPack = packs.find(p => p.id === selected)
 
-  // Map pack id → Dodo product id (injected via env vars at build time)
   const PACK_PRODUCT_IDS: Record<string, string> = {
-    starter:    import.meta.env.VITE_PRODUCT_STARTER    ?? '',
-    boost:      import.meta.env.VITE_PRODUCT_BOOST      ?? '',
-    standard:   import.meta.env.VITE_PRODUCT_STANDARD   ?? '',
-    pro:        import.meta.env.VITE_PRODUCT_PRO_PACK   ?? '',
-    studio:     import.meta.env.VITE_PRODUCT_STUDIO     ?? '',
-    enterprise: import.meta.env.VITE_PRODUCT_ENTERPRISE ?? '',
+    starter:    DODO_PRODUCTS.STARTER,
+    boost:      DODO_PRODUCTS.BOOST,
+    standard:   DODO_PRODUCTS.STANDARD,
+    pro:        DODO_PRODUCTS.PRO_PACK,
+    studio:     DODO_PRODUCTS.STUDIO,
+    enterprise: DODO_PRODUCTS.ENTERPRISE,
   }
 
   async function handleCheckout() {
     if (!selectedPack) return
     const productId = PACK_PRODUCT_IDS[selectedPack.id]
     if (!productId) {
-      // Fallback: simulate in dev (no env vars set)
-      setPurchasing(true)
-      await new Promise(r => setTimeout(r, 900))
-      addCredits(selectedPack.credits)
-      setDone(selectedPack)
-      setPurchasing(false)
+      console.warn('No product ID for pack:', selectedPack.id)
       return
     }
 

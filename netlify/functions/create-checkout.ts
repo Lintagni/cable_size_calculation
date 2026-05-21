@@ -1,29 +1,11 @@
 import type { Handler } from '@netlify/functions'
-
-// Credit pack: env var → credits granted
-const PACK_CONFIG: Array<{ envKey: string; credits: number }> = [
-  { envKey: 'PRODUCT_STARTER',    credits: 25   },
-  { envKey: 'PRODUCT_BOOST',      credits: 75   },
-  { envKey: 'PRODUCT_STANDARD',   credits: 200  },
-  { envKey: 'PRODUCT_PRO_PACK',   credits: 600  },
-  { envKey: 'PRODUCT_STUDIO',     credits: 1500 },
-  { envKey: 'PRODUCT_ENTERPRISE', credits: 5000 },
-]
-
-function creditsForProduct(productId: string): number | null {
-  for (const p of PACK_CONFIG) {
-    if (process.env[p.envKey] === productId) return p.credits
-  }
-  return null
-}
+import { PACK_CREDITS } from './_products'
 
 export const handler: Handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' }
-  }
+  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' }
 
   const { productId } = JSON.parse(event.body || '{}') as { productId: string }
-  const credits = creditsForProduct(productId)
+  const credits = PACK_CREDITS[productId]
 
   if (!credits) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid product ID' }) }
