@@ -11,11 +11,12 @@ interface AuthStore {
   profile:     Profile | null
   initialised: boolean
 
-  signUp:      (email: string, password: string) => Promise<{ error: string | null }>
-  signIn:      (email: string, password: string) => Promise<{ error: string | null }>
-  signOut:     () => Promise<void>
-  loadProfile: () => Promise<Profile | null>
-  _setSession: (session: Session | null) => void
+  signUp:          (email: string, password: string) => Promise<{ error: string | null }>
+  signIn:          (email: string, password: string) => Promise<{ error: string | null }>
+  signInWithGoogle: () => Promise<{ error: string | null }>
+  signOut:         () => Promise<void>
+  loadProfile:     () => Promise<Profile | null>
+  _setSession:     (session: Session | null) => void
 }
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
@@ -26,6 +27,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   signUp: async (email, password) => {
     const { error } = await supabase.auth.signUp({ email, password })
+    return { error: error?.message ?? null }
+  },
+
+  signInWithGoogle: async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
     return { error: error?.message ?? null }
   },
 
