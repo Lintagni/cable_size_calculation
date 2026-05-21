@@ -205,7 +205,7 @@ export default function BuyCreditsModal({ onClose }: Props) {
               </button>
 
               <p className="text-[10px] text-gray-600 text-center mt-1">
-                Credits never expire · Secure payment via Stripe · VAT may apply
+                Credits never expire · Secure payment via Dodo Payments · Tax included
               </p>
             </div>
           </>

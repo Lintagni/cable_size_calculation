@@ -168,7 +168,7 @@ export default function AiInputBar({ currentResult, onApplyInputs }: Props) {
               onClick={() => usePlanStore.getState().setPlan('pro')}
               className="text-xs font-semibold bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors"
             >
-              Upgrade to Pro — £9.99/mo
+              Upgrade to Pro — $12.99/mo
             </button>
             <span className="text-xs text-gray-400 ml-3">7-day free trial</span>
           </div>
