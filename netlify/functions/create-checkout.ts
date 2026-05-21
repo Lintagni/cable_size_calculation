@@ -4,7 +4,7 @@ import { PACK_CREDITS } from './_products'
 export const handler: Handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' }
 
-  const { productId } = JSON.parse(event.body || '{}') as { productId: string }
+  const { productId, userId } = JSON.parse(event.body || '{}') as { productId: string; userId?: string | null }
   const credits = PACK_CREDITS[productId]
 
   if (!credits) {
@@ -32,7 +32,7 @@ export const handler: Handler = async (event) => {
         product_cart: [{ product_id: productId, quantity: 1 }],
         payment_link: true,
         return_url: `${siteUrl}/payment-success`,
-        metadata: { credits: String(credits) },
+        metadata: { credits: String(credits), ...(userId ? { user_id: userId } : {}) },
       }),
     })
 

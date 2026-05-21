@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AiModelId } from './aiModelStore'
+import type { Profile } from '../lib/supabase'
 
 interface QuotaRecord {
   period:    string  // 'YYYY-MM' — monthly bucket
@@ -9,10 +10,11 @@ interface QuotaRecord {
 }
 
 interface AiQuotaStore {
-  record:      QuotaRecord
-  consume:     (modelId: AiModelId, plan: string) => void
-  addCredits:  (amount: number) => void
-  resetForDev: () => void
+  record:          QuotaRecord
+  consume:         (modelId: AiModelId, plan: string) => void
+  addCredits:      (amount: number) => void
+  setFromProfile:  (profile: Profile) => void
+  resetForDev:     () => void
 }
 
 // Monthly credit limits per plan
@@ -150,6 +152,14 @@ export const useAiQuotaStore = create<AiQuotaStore>()(
           purchased: (s.record.purchased ?? 0) + amount,
         },
       })),
+
+      setFromProfile: (profile) => set({
+        record: {
+          period:    profile.credits_period || currentPeriod(),
+          used:      profile.credits_used,
+          purchased: profile.credits_purchased,
+        },
+      }),
 
       resetForDev: () => set({ record: { period: currentPeriod(), used: 0, purchased: 0 } }),
     }),

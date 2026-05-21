@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { X, Sparkles, Check, Zap, AlertTriangle } from 'lucide-react'
 import { DODO_PRODUCTS } from '../../config/dodoProducts'
 import clsx from 'clsx'
-import { CREDIT_PACKS, MODEL_CREDIT_WEIGHT, useAiQuotaStore } from '../../store/aiQuotaStore'
-import type { CreditPack } from '../../store/aiQuotaStore'
+import { CREDIT_PACKS, MODEL_CREDIT_WEIGHT } from '../../store/aiQuotaStore'
 import { usePlanStore } from '../../store/planStore'
+import { useAuthStore } from '../../store/authStore'
 import { Link } from 'react-router-dom'
 
 interface Props {
@@ -21,10 +21,9 @@ function callsEstimate(credits: number): string {
 
 export default function BuyCreditsModal({ onClose }: Props) {
   const { plan }                    = usePlanStore()
-  const { record }                  = useAiQuotaStore()
-  const [selected, setSelected]     = useState<string | null>(null)
-  const [purchasing, setPurchasing] = useState(false)
-  const [done, setDone]             = useState<CreditPack | null>(null)
+  const { user }                    = useAuthStore()
+  const [selected, setSelected]           = useState<string | null>(null)
+  const [purchasing, setPurchasing]       = useState(false)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
   const packs = CREDIT_PACKS.filter(p => p.plans.includes(plan as 'free' | 'pro' | 'business'))
@@ -53,7 +52,7 @@ export default function BuyCreditsModal({ onClose }: Props) {
       const res = await fetch('/.netlify/functions/create-checkout', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ productId }),
+        body:    JSON.stringify({ productId, userId: user?.id ?? null }),
       })
 
       if (res.status === 404) {
@@ -103,34 +102,8 @@ export default function BuyCreditsModal({ onClose }: Props) {
           </button>
         </div>
 
-        {/* Success state */}
-        {done ? (
-          <div className="px-6 py-10 flex flex-col items-center text-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-green-900/40 border border-green-700 flex items-center justify-center">
-              <Check className="w-7 h-7 text-green-400" />
-            </div>
-            <div>
-              <p className="text-lg font-bold text-white">
-                +{done.credits} credits added!
-              </p>
-              <p className="text-sm text-gray-400 mt-1">
-                Your balance is now{' '}
-                <span className="text-violet-400 font-semibold">
-                  {record.purchased} purchased credits
-                </span>{' '}
-                plus your monthly allowance.
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="mt-2 bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium px-6 py-2.5 rounded-xl transition-colors"
-            >
-              Start using credits
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Current plan info */}
+        <>
+          {/* Current plan info */}
             <div className="px-6 pt-4 pb-3">
               <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
                 <span className="capitalize">{plan} plan</span>
@@ -243,7 +216,6 @@ export default function BuyCreditsModal({ onClose }: Props) {
               </p>
             </div>
           </>
-        )}
       </div>
     </div>
   )

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CheckCircle, XCircle, Loader2, Sparkles } from 'lucide-react'
 import { useAiQuotaStore } from '../store/aiQuotaStore'
+import { useAuthStore } from '../store/authStore'
 
 type Status = 'loading' | 'success' | 'error'
 
@@ -9,9 +10,10 @@ export default function PaymentSuccess() {
   const [searchParams]  = useSearchParams()
   const navigate        = useNavigate()
   const { addCredits }  = useAiQuotaStore()
-  const [status, setStatus]   = useState<Status>('loading')
+  const { session, loadProfile } = useAuthStore()
+  const [status,  setStatus]  = useState<Status>('loading')
   const [credits, setCredits] = useState(0)
-  const [errMsg, setErrMsg]   = useState('')
+  const [errMsg,  setErrMsg]  = useState('')
 
   useEffect(() => {
     const paymentId = searchParams.get('payment_id')
@@ -21,13 +23,24 @@ export default function PaymentSuccess() {
       return
     }
 
-    fetch(`/.netlify/functions/verify-payment?payment_id=${encodeURIComponent(paymentId)}`)
+    const headers: Record<string, string> = {}
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`
+    }
+
+    fetch(
+      `/.netlify/functions/verify-payment?payment_id=${encodeURIComponent(paymentId)}`,
+      { headers },
+    )
       .then(r => r.json())
-      .then((data: { verified?: boolean; credits?: number; error?: string }) => {
+      .then(async (data: { verified?: boolean; credits?: number; error?: string }) => {
         if (data.verified && data.credits) {
+          // Update local store immediately for UI responsiveness
           addCredits(data.credits)
           setCredits(data.credits)
           setStatus('success')
+          // Reload profile from Supabase (if logged in) to keep DB in sync
+          if (session) await loadProfile()
         } else {
           throw new Error(data.error ?? 'Payment could not be verified')
         }
@@ -36,7 +49,7 @@ export default function PaymentSuccess() {
         setErrMsg(err.message)
         setStatus('error')
       })
-  }, [searchParams, addCredits])
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">

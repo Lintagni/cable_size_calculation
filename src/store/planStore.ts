@@ -8,12 +8,11 @@ interface PlanStore {
   setPlan: (plan: Plan) => void
 }
 
-// Persisted so dev toggle survives reloads.
-// Replace with Supabase subscription check at deploy time.
+// Default 'free'; overridden by Supabase profile on login.
 export const usePlanStore = create<PlanStore>()(
   persist(
     (set) => ({
-      plan: 'pro',
+      plan: 'free',
       setPlan: (plan) => set({ plan }),
     }),
     { name: 'cablecalc-plan' },
