@@ -8,6 +8,7 @@ import Pricing from './pages/Pricing'
 import PaymentSuccess from './pages/PaymentSuccess'
 import { supabase } from './lib/supabase'
 import { useAuthStore } from './store/authStore'
+import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -39,8 +40,8 @@ export default function App() {
 
   return (
     <Routes>
-      {/* App shell — full screen, own sidebar, no Navbar */}
-      <Route path="/calculator" element={<Calculator />} />
+      {/* App shell — requires auth */}
+      <Route path="/calculator" element={<ProtectedRoute><Calculator /></ProtectedRoute>} />
 
       {/* Public pages — standard navbar layout */}
       <Route path="/"               element={<PublicLayout><Landing /></PublicLayout>} />
