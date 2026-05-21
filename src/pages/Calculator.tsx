@@ -54,7 +54,7 @@ const NAV = [
 const PLAN_LABEL: Record<Plan, string> = {
   free: 'Free', pro: 'Pro', business: 'Business',
 }
-const PLAN_COLOR: Record<Plan, string> = {
+const _PLAN_COLOR: Record<Plan, string> = {
   free:     'text-gray-400 dark:text-gray-500',
   pro:      'text-blue-500',
   business: 'text-violet-400',

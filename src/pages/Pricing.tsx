@@ -1,7 +1,14 @@
 import { CheckCircle, X, Sparkles } from 'lucide-react'
 import { usePlanStore } from '../store/planStore'
 
-const tiers = [
+type Feature = { label: string; included: boolean; spacer?: boolean }
+
+const tiers: Array<{
+  name: string; price: string; period: string; description: string
+  cta: string; ctaStyle: string; planValue: 'free' | 'pro' | 'business'
+  highlight?: boolean; badge?: string; badgeStyle?: string
+  features: Feature[]
+}> = [
   {
     name: 'Free',
     price: '£0',
