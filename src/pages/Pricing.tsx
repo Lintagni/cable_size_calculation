@@ -11,7 +11,7 @@ const tiers: Array<{
 }> = [
   {
     name: 'Free',
-    price: '£0',
+    price: '$0',
     period: 'forever',
     description: 'For occasional use and exploring the tool.',
     cta: 'Get Started',
@@ -32,7 +32,7 @@ const tiers: Array<{
   },
   {
     name: 'Pro',
-    price: '£9.99',
+    price: '$12.99',
     period: '/month',
     description: 'For practising engineers who need the full BS7671 toolset.',
     cta: 'Start Free Trial',
@@ -56,7 +56,7 @@ const tiers: Array<{
   },
   {
     name: 'Business',
-    price: '£29.99',
+    price: '$34.99',
     period: '/month',
     description: 'For design firms and consultancies needing every tool.',
     cta: 'Contact Sales',
@@ -176,7 +176,7 @@ export default function Pricing() {
       </div>
 
       <p className="text-center text-gray-400 dark:text-gray-500 text-sm mt-8">
-        All prices ex-VAT. Cancel anytime. 7-day free trial on Pro and Business.
+        All prices in USD. Cancel anytime. 7-day free trial on Pro and Business.
       </p>
     </div>
   )

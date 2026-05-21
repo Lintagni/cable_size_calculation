@@ -152,7 +152,7 @@ export default function BuyCreditsModal({ onClose }: Props) {
               {plan === 'free' && (
                 <div className="mt-3 p-3 rounded-xl bg-blue-950/30 border border-blue-900/50">
                   <p className="text-xs text-blue-300">
-                    <span className="font-semibold">Tip:</span> Upgrading to Pro (£9.99/mo) gives 200 credits/month — better value than buying top-ups repeatedly.{' '}
+                    <span className="font-semibold">Tip:</span> Upgrading to Pro ($12.99/mo) gives 200 credits/month — better value than buying top-ups repeatedly.{' '}
                     <Link to="/pricing" className="text-blue-400 hover:underline" onClick={onClose}>
                       Compare plans →
                     </Link>
