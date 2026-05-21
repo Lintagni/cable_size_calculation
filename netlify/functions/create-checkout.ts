@@ -11,7 +11,8 @@ export const handler: Handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid product ID' }) }
   }
 
-  const siteUrl = process.env.SITE_URL || 'http://localhost:5173'
+  // Netlify provides URL automatically; SITE_URL is an optional override
+  const siteUrl = process.env.SITE_URL || process.env.URL || 'http://localhost:5173'
 
   try {
     const res = await fetch('https://api.dodopayments.com/payments', {
