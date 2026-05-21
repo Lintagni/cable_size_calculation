@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Sparkles, Check, Zap } from 'lucide-react'
+import { X, Sparkles, Check, Zap, AlertTriangle } from 'lucide-react'
 import { DODO_PRODUCTS } from '../../config/dodoProducts'
 import clsx from 'clsx'
 import { CREDIT_PACKS, MODEL_CREDIT_WEIGHT, useAiQuotaStore } from '../../store/aiQuotaStore'
@@ -21,10 +21,11 @@ function callsEstimate(credits: number): string {
 
 export default function BuyCreditsModal({ onClose }: Props) {
   const { plan }                    = usePlanStore()
-  const { record, addCredits }      = useAiQuotaStore()
+  const { record }                  = useAiQuotaStore()
   const [selected, setSelected]     = useState<string | null>(null)
   const [purchasing, setPurchasing] = useState(false)
   const [done, setDone]             = useState<CreditPack | null>(null)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
   const packs = CREDIT_PACKS.filter(p => p.plans.includes(plan as 'free' | 'pro' | 'business'))
   const selectedPack = packs.find(p => p.id === selected)
@@ -42,25 +43,33 @@ export default function BuyCreditsModal({ onClose }: Props) {
     if (!selectedPack) return
     const productId = PACK_PRODUCT_IDS[selectedPack.id]
     if (!productId) {
-      console.warn('No product ID for pack:', selectedPack.id)
+      setCheckoutError('No product ID configured for this pack. Please contact support.')
       return
     }
 
     setPurchasing(true)
+    setCheckoutError(null)
     try {
-      const res  = await fetch('/.netlify/functions/create-checkout', {
+      const res = await fetch('/.netlify/functions/create-checkout', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ productId }),
       })
+
+      if (res.status === 404) {
+        throw new Error('Payment service not available. Make sure you are on the deployed site.')
+      }
+
       const data = await res.json() as { checkoutUrl?: string; error?: string }
       if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl   // redirect to Dodo hosted checkout
+        // Redirect to Dodo hosted checkout — browser will navigate away
+        window.location.href = data.checkoutUrl
       } else {
-        throw new Error(data.error ?? 'Failed to create checkout')
+        throw new Error(data.error ?? 'Payment service did not return a checkout URL.')
       }
     } catch (err) {
       console.error('checkout error:', err)
+      setCheckoutError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
       setPurchasing(false)
     }
   }
@@ -136,7 +145,7 @@ export default function BuyCreditsModal({ onClose }: Props) {
                 {packs.map(pack => (
                   <button
                     key={pack.id}
-                    onClick={() => setSelected(pack.id)}
+                    onClick={() => { setSelected(pack.id); setCheckoutError(null) }}
                     className={clsx(
                       'relative flex flex-col items-start p-4 rounded-xl border text-left transition-all',
                       selected === pack.id
@@ -190,6 +199,14 @@ export default function BuyCreditsModal({ onClose }: Props) {
 
             {/* Footer / Pay button */}
             <div className="px-6 pb-5 pt-2 flex flex-col gap-2">
+              {/* Error message */}
+              {checkoutError && (
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-950/40 border border-red-800/60 text-xs text-red-300">
+                  <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-red-400" />
+                  <span>{checkoutError}</span>
+                </div>
+              )}
+
               <button
                 onClick={handleCheckout}
                 disabled={!selected || purchasing}
