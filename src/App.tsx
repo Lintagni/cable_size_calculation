@@ -4,6 +4,7 @@ import Landing from './pages/Landing'
 import Calculator from './pages/Calculator'
 import Dashboard from './pages/Dashboard'
 import Pricing from './pages/Pricing'
+import PaymentSuccess from './pages/PaymentSuccess'
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -23,7 +24,8 @@ export default function App() {
       {/* Public pages — standard navbar layout */}
       <Route path="/"         element={<PublicLayout><Landing /></PublicLayout>} />
       <Route path="/dashboard" element={<PublicLayout><Dashboard /></PublicLayout>} />
-      <Route path="/pricing"   element={<PublicLayout><Pricing /></PublicLayout>} />
+      <Route path="/pricing"         element={<PublicLayout><Pricing /></PublicLayout>} />
+      <Route path="/payment-success" element={<PaymentSuccess />} />
     </Routes>
   )
 }

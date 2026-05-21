@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Sparkles, Check, CreditCard, Zap } from 'lucide-react'
+import { X, Sparkles, Check, Zap } from 'lucide-react'
 import clsx from 'clsx'
 import { CREDIT_PACKS, MODEL_CREDIT_WEIGHT, useAiQuotaStore } from '../../store/aiQuotaStore'
 import type { CreditPack } from '../../store/aiQuotaStore'
@@ -28,14 +28,46 @@ export default function BuyCreditsModal({ onClose }: Props) {
   const packs = CREDIT_PACKS.filter(p => p.plans.includes(plan as 'free' | 'pro' | 'business'))
   const selectedPack = packs.find(p => p.id === selected)
 
-  async function handleSimulatedPay() {
+  // Map pack id → Dodo product id (injected via env vars at build time)
+  const PACK_PRODUCT_IDS: Record<string, string> = {
+    starter:    import.meta.env.VITE_PRODUCT_STARTER    ?? '',
+    boost:      import.meta.env.VITE_PRODUCT_BOOST      ?? '',
+    standard:   import.meta.env.VITE_PRODUCT_STANDARD   ?? '',
+    pro:        import.meta.env.VITE_PRODUCT_PRO_PACK   ?? '',
+    studio:     import.meta.env.VITE_PRODUCT_STUDIO     ?? '',
+    enterprise: import.meta.env.VITE_PRODUCT_ENTERPRISE ?? '',
+  }
+
+  async function handleCheckout() {
     if (!selectedPack) return
+    const productId = PACK_PRODUCT_IDS[selectedPack.id]
+    if (!productId) {
+      // Fallback: simulate in dev (no env vars set)
+      setPurchasing(true)
+      await new Promise(r => setTimeout(r, 900))
+      addCredits(selectedPack.credits)
+      setDone(selectedPack)
+      setPurchasing(false)
+      return
+    }
+
     setPurchasing(true)
-    // Simulate payment delay
-    await new Promise(r => setTimeout(r, 1200))
-    addCredits(selectedPack.credits)
-    setDone(selectedPack)
-    setPurchasing(false)
+    try {
+      const res  = await fetch('/.netlify/functions/create-checkout', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ productId }),
+      })
+      const data = await res.json() as { checkoutUrl?: string; error?: string }
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl   // redirect to Dodo hosted checkout
+      } else {
+        throw new Error(data.error ?? 'Failed to create checkout')
+      }
+    } catch (err) {
+      console.error('checkout error:', err)
+      setPurchasing(false)
+    }
   }
 
   return (
@@ -163,9 +195,8 @@ export default function BuyCreditsModal({ onClose }: Props) {
 
             {/* Footer / Pay button */}
             <div className="px-6 pb-5 pt-2 flex flex-col gap-2">
-              {/* Simulated pay button (dev) */}
               <button
-                onClick={handleSimulatedPay}
+                onClick={handleCheckout}
                 disabled={!selected || purchasing}
                 className={clsx(
                   'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all',
@@ -182,26 +213,17 @@ export default function BuyCreditsModal({ onClose }: Props) {
                           style={{ animationDelay: `${i * 0.15}s` }} />
                       ))}
                     </span>
-                    Processing…
+                    Redirecting to checkout…
                   </>
                 ) : (
                   <>
                     <Zap className="w-4 h-4" />
                     {selectedPack
-                      ? `Add ${selectedPack.credits} credits — ${selectedPack.price} (Dev sim)`
+                      ? `Pay ${selectedPack.price} · Add ${selectedPack.credits} credits`
                       : 'Select a pack to continue'
                     }
                   </>
                 )}
-              </button>
-
-              {/* Real Stripe button (coming soon) */}
-              <button
-                disabled
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium border border-gray-700 text-gray-600 cursor-not-allowed"
-              >
-                <CreditCard className="w-4 h-4" />
-                Pay with Stripe — coming soon
               </button>
 
               <p className="text-[10px] text-gray-600 text-center mt-1">
