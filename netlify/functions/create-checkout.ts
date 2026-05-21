@@ -14,6 +14,11 @@ export const handler: Handler = async (event) => {
   // Netlify provides URL automatically; SITE_URL is an optional override
   const siteUrl = process.env.SITE_URL || process.env.URL || 'http://localhost:5173'
 
+  if (!process.env.DODO_SECRET_KEY) {
+    console.error('create-checkout: DODO_SECRET_KEY env var is not set')
+    return { statusCode: 500, body: JSON.stringify({ error: 'Payment service not configured (missing API key).' }) }
+  }
+
   try {
     const res = await fetch('https://api.dodopayments.com/payments', {
       method: 'POST',
@@ -31,8 +36,15 @@ export const handler: Handler = async (event) => {
       }),
     })
 
-    const data = await res.json() as { payment_link?: string; payment_id?: string }
+    const data = await res.json() as { payment_link?: string; payment_id?: string; [key: string]: unknown }
+    console.log('Dodo create-payment response:', JSON.stringify(data))
+
     if (!res.ok) throw new Error(JSON.stringify(data))
+
+    if (!data.payment_link) {
+      console.error('Dodo response missing payment_link. Full response:', JSON.stringify(data))
+      throw new Error('Dodo did not return a payment link. Check function logs for details.')
+    }
 
     return {
       statusCode: 200,
