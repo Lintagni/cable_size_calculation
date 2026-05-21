@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Zap, Sparkles, TrendingDown, AlertTriangle, Cpu, Radio,
@@ -13,9 +13,11 @@ import ShortCircuitForm from '../components/calculator/ShortCircuitForm'
 import MotorCableForm from '../components/calculator/MotorCableForm'
 import AbcCableForm from '../components/calculator/AbcCableForm'
 import BusbarForm from '../components/calculator/BusbarForm'
+import HistoryPanel from '../components/calculator/HistoryPanel'
 import { usePlanStore } from '../store/planStore'
 import { useThemeStore } from '../store/themeStore'
 import { useAiQuotaStore, getRemaining, PLAN_MONTHLY_QUOTA } from '../store/aiQuotaStore'
+import { useHistoryStore, type CalcType } from '../store/historyStore'
 import type { FillAction } from '../lib/claude'
 import type { LvCableResult, LvCableInput } from '../calculators/lvCableSizing'
 import type { AbcInput } from '../calculators/abcCableSizing'
@@ -28,7 +30,7 @@ function planAllows(userPlan: Plan, minPlan: string) {
   return PLAN_RANK[userPlan] >= PLAN_RANK[minPlan as Plan]
 }
 
-type TabId = 'ai' | 'lv' | 'vdrop' | 'sc' | 'motor' | 'abc' | 'busbar'
+type TabId = 'ai' | 'lv' | 'vdrop' | 'sc' | 'motor' | 'abc' | 'busbar' | 'history'
 
 // ─── Sidebar nav config ───────────────────────────────────────────────────────
 const NAV = [
@@ -69,6 +71,7 @@ function Sidebar({
   const { setPlan } = usePlanStore()
   const { dark, toggle } = useThemeStore()
   const navigate = useNavigate()
+  const { entries } = useHistoryStore()
 
   const aiPct = aiQuota === -1 ? 100 : Math.min(100, Math.round(((aiRemaining ?? 0) / aiQuota) * 100))
 
@@ -148,11 +151,21 @@ function Sidebar({
 
         {/* External nav links */}
         <button
-          onClick={() => navigate('/dashboard')}
-          className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200 transition-all"
+          onClick={() => onNav('history')}
+          className={clsx(
+            'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all',
+            active === 'history'
+              ? 'bg-violet-50 dark:bg-violet-500/10 text-violet-700 dark:text-violet-400 font-medium'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200',
+          )}
         >
-          <Clock className="w-4 h-4" />
-          <span>History</span>
+          <Clock className={clsx('w-4 h-4', active === 'history' ? 'text-violet-600 dark:text-violet-400' : '')} />
+          <span className="flex-1 text-left">History</span>
+          {entries.length > 0 && (
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+              {entries.length}
+            </span>
+          )}
         </button>
         <button
           onClick={() => navigate('/pricing')}
@@ -235,6 +248,7 @@ function Sidebar({
 const TAB_LABELS: Record<TabId, string> = {
   ai: 'AI Assistant', lv: 'LV Cable Sizing', vdrop: 'Voltage Drop',
   sc: 'Short Circuit', motor: 'Motor Cable', abc: 'ABC Cable', busbar: 'Busbar Sizing',
+  history: 'History',
 }
 
 function TopBar({ active }: { active: TabId }) {
@@ -285,6 +299,7 @@ function UpgradeBanner({ tier }: { tier: 'pro' | 'business' }) {
 export default function Calculator() {
   const { plan } = usePlanStore()
   const { record } = useAiQuotaStore()
+  const { push } = useHistoryStore()
 
   const [active, setActive]               = useState<TabId>('ai')
   const [currentResult, setCurrentResult] = useState<LvCableResult | null>(null)
@@ -295,10 +310,42 @@ export default function Calculator() {
   const aiQuota     = PLAN_MONTHLY_QUOTA[plan]
   const aiRemaining = getRemaining(record, plan)
 
+  // ── Auto-save LV results to history ─────────────────────────────────────────
+  const prevResultId = useRef<string | null>(null)
+  useEffect(() => {
+    if (!currentResult || !lvInputs) return
+    // Build a stable key so we don't double-save the same result
+    const key = `${currentResult.selectedCsa}-${lvInputs.designCurrent}-${lvInputs.cableLength}`
+    if (key === prevResultId.current) return
+    prevResultId.current = key
+
+    push({
+      type:    'lv',
+      summary: `${currentResult.selectedCsa}mm² ${lvInputs.insulation ?? 'XLPE'} · ${lvInputs.designCurrent}A · Method ${lvInputs.referenceMethod ?? 'C'}`,
+      inputs:  lvInputs as Record<string, unknown>,
+      result:  currentResult as unknown as Record<string, unknown>,
+    })
+  }, [currentResult]) // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleFillAction(action: FillAction) {
     if (action.action === 'fill_form')   { setActive('lv');     setLvInputs({ ...action.inputs }) }
     if (action.action === 'fill_abc')    { setActive('abc');    setAbcInputs({ ...action.inputs }) }
     if (action.action === 'fill_busbar') { setActive('busbar'); setBusbarInputs({ ...action.inputs }) }
+  }
+
+  function handleHistoryRestore(type: CalcType, inputs: Record<string, unknown>) {
+    if (type === 'lv') {
+      setLvInputs(inputs as Partial<LvCableInput>)
+      setActive('lv')
+    } else if (type === 'abc') {
+      setAbcInputs(inputs as Partial<AbcInput>)
+      setActive('abc')
+    } else if (type === 'busbar') {
+      setBusbarInputs(inputs as Partial<BusbarInput>)
+      setActive('busbar')
+    } else {
+      setActive(type)
+    }
   }
 
   return (
@@ -326,7 +373,7 @@ export default function Calculator() {
           </div>
 
           {/* Calculator tabs */}
-          {active !== 'ai' && (
+          {active !== 'ai' && active !== 'history' && (
             <>
               {active === 'lv'     && <LvCableSizingForm externalInputs={lvInputs} onResultChange={setCurrentResult} />}
               {active === 'vdrop'  && <VoltageDropForm />}
@@ -335,6 +382,11 @@ export default function Calculator() {
               {active === 'abc'    && (planAllows(plan as Plan, 'business') ? <AbcCableForm externalInputs={abcInputs} />    : <UpgradeBanner tier="business" />)}
               {active === 'busbar' && (planAllows(plan as Plan, 'business') ? <BusbarForm externalInputs={busbarInputs} /> : <UpgradeBanner tier="business" />)}
             </>
+          )}
+
+          {/* History tab */}
+          {active === 'history' && (
+            <HistoryPanel onRestore={handleHistoryRestore} />
           )}
         </div>
       </div>
