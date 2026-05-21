@@ -9,6 +9,7 @@ import PaymentSuccess from './pages/PaymentSuccess'
 import { supabase } from './lib/supabase'
 import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/auth/ProtectedRoute'
+import { loadCableData } from './lib/loadCableData'
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -23,6 +24,9 @@ export default function App() {
   const { _setSession, loadProfile } = useAuthStore()
 
   useEffect(() => {
+    // Load BS7671 cable data from Supabase (falls back to hardcoded defaults on error)
+    loadCableData()
+
     // Load existing session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       _setSession(session)
