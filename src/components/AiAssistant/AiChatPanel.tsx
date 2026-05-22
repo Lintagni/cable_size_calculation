@@ -234,91 +234,107 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   function handleReset() { reset(); setMsgModels({}) }
 
   // ── Empty / centered state ─────────────────────────────────────────────────
+  const [shuffleIdx, setShuffleIdx] = useState(0)
+  const visibleSuggestions = SUGGESTIONS.slice(shuffleIdx % 2 === 0 ? 0 : 3, shuffleIdx % 2 === 0 ? 6 : 6)
+
   if (!hasMessages) {
     return (
-      <div className="flex flex-col items-center justify-center h-full px-4 pb-10">
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', height: '100%', padding: '0 24px 40px',
+      }}>
+        {/* Eyebrow */}
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em',
+          textTransform: 'uppercase', color: 'var(--ink-4)',
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24,
+        }}>
+          <span style={{ width: 24, height: 1, background: 'var(--ink-4)', display: 'inline-block' }} />
+          AI Assistant · Beta
+          <span style={{ width: 24, height: 1, background: 'var(--ink-4)', display: 'inline-block' }} />
+        </div>
 
         {/* Greeting */}
-        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-2 text-center">
+        <h1 style={{ fontSize: 42, fontWeight: 800, color: 'var(--ink)', marginBottom: 10, textAlign: 'center', lineHeight: 1.1 }}>
           {greeting()}, Engineer.
         </h1>
-        <p className="text-gray-400 dark:text-gray-500 mb-8 text-center text-sm">
+        <p style={{ color: 'var(--ink-3)', marginBottom: 32, textAlign: 'center', fontSize: 15, maxWidth: 480 }}>
           Describe a circuit in plain English — I'll fill the right calculator automatically.
         </p>
 
-        {/* Model selector row — sits above the input box */}
-        <div className="w-full max-w-2xl flex items-center gap-3 mb-3">
+        {/* Model + credits row */}
+        <div style={{ width: '100%', maxWidth: 640, display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
           <ModelDropdown />
           {quota !== -1 && (
-            <div className="flex items-center gap-2">
-              <span className={clsx(
-                'text-xs flex items-center gap-1.5',
-                !canQuery ? 'text-red-400' : remaining <= quota * 0.2 ? 'text-amber-400' : 'text-gray-500 dark:text-gray-500',
-              )}>
+            <>
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 12,
+                color: !canQuery ? 'var(--fail)' : remaining <= quota * 0.2 ? '#f59e0b' : 'var(--ink-3)',
+              }}>
                 {remaining}/{quota} credits
-                <span className="text-gray-600 dark:text-gray-600">·</span>
-                <span className="text-gray-500 dark:text-gray-600">{MODEL_CREDIT_WEIGHT[modelId]}/call</span>
               </span>
               <button
                 onClick={() => setShowBuyModal(true)}
-                className="text-[11px] font-medium text-violet-400 hover:text-violet-300 border border-violet-800 hover:border-violet-600 px-2 py-0.5 rounded-lg transition-colors"
+                style={{
+                  fontSize: 12, fontWeight: 600, padding: '5px 12px', borderRadius: 'var(--r)',
+                  background: 'var(--accent)', color: 'var(--bg)', border: 'none', cursor: 'pointer',
+                }}
               >
                 + Buy credits
               </button>
-            </div>
+            </>
           )}
           {quota === -1 && (
-            <span className="text-xs text-violet-500 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> Unlimited credits
+            <span style={{ fontSize: 12, color: 'var(--ok)', fontFamily: 'var(--font-mono)' }}>
+              ∞ Unlimited credits
             </span>
           )}
         </div>
 
         {/* Input box */}
-        <div className={clsx(
-          'w-full max-w-2xl rounded-2xl border shadow-lg transition-all',
-          canQuery
-            ? 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus-within:border-violet-500 dark:focus-within:border-violet-600 focus-within:shadow-xl focus-within:shadow-violet-900/20'
-            : 'border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 opacity-80',
-        )}>
+        <div style={{
+          width: '100%', maxWidth: 640,
+          background: 'var(--surface)', border: '1px solid var(--line)',
+          borderRadius: 'var(--r-lg)', overflow: 'hidden',
+          opacity: canQuery ? 1 : 0.7,
+          boxShadow: '0 4px 24px oklch(0% 0 0 / 0.12)',
+        }}>
           <textarea
             ref={textareaRef}
-            rows={1}
+            rows={3}
             value={prompt}
             onChange={e => { setPrompt(e.target.value); autoResize(e.target) }}
             onKeyDown={handleKey}
             disabled={!canQuery}
-            placeholder={
-              canQuery
-                ? 'Describe your circuit, busbar, or overhead ABC run…'
-                : 'Monthly credit quota reached — upgrade to continue'
-            }
-            className="w-full bg-transparent px-4 py-3 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 resize-none outline-none text-sm leading-relaxed rounded-2xl"
-            style={{ minHeight: '24px', maxHeight: '160px' }}
+            placeholder={canQuery ? 'Describe your circuit, busbar, or overhead ABC run…' : 'Monthly credit quota reached — upgrade to continue'}
+            style={{
+              width: '100%', background: 'transparent', border: 'none', outline: 'none',
+              padding: '16px 16px 8px', fontSize: 14, color: 'var(--ink)',
+              resize: 'none', lineHeight: 1.6, minHeight: 80, maxHeight: 160,
+              fontFamily: 'var(--font-sans)',
+            }}
           />
-
-          {/* Footer: send + hint */}
-          <div className="flex items-center justify-between px-4 pb-2.5 pt-0 gap-2">
-            <p className="text-[10px] text-gray-400 dark:text-gray-600">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px 12px', gap: 8 }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)' }}>
               Enter ↵ to send · Shift+Enter for new line
-            </p>
-            <div className="flex items-center gap-2">
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {appliedLabel && (
-                <span className="text-xs text-green-500 font-medium">✓ {appliedLabel}</span>
+                <span style={{ fontSize: 11, color: 'var(--ok)', fontWeight: 600 }}>✓ {appliedLabel}</span>
               )}
               <button
                 onClick={handleSubmit}
                 disabled={!prompt.trim() || streaming || !canQuery}
-                className={clsx(
-                  'w-8 h-8 rounded-xl flex items-center justify-center transition-all',
-                  prompt.trim() && canQuery
-                    ? 'bg-violet-600 hover:bg-violet-500 shadow-md shadow-violet-900/40'
-                    : 'bg-gray-200 dark:bg-gray-800 cursor-not-allowed',
-                )}
+                style={{
+                  width: 32, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: prompt.trim() && canQuery ? 'var(--ink)' : 'var(--line)',
+                  transition: 'background 0.15s',
+                }}
               >
                 {streaming
-                  ? <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                  : <Send className={clsx('w-3.5 h-3.5', prompt.trim() && canQuery ? 'text-white' : 'text-gray-500')} />
+                  ? <span style={{ width: 6, height: 6, background: 'var(--bg)', borderRadius: '50%' }} />
+                  : <Send size={14} style={{ color: prompt.trim() && canQuery ? 'var(--bg)' : 'var(--ink-4)' }} />
                 }
               </button>
             </div>
@@ -326,29 +342,45 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
         </div>
 
         {/* Suggestions */}
-        <div className="w-full max-w-2xl mt-5">
-          <p className="text-xs text-gray-400 dark:text-gray-500 mb-2.5">Try asking:</p>
-          <div className="grid grid-cols-2 gap-2">
-            {SUGGESTIONS.map(s => (
+        <div style={{ width: '100%', maxWidth: 640, marginTop: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              <span style={{ width: 24, height: 1, background: 'var(--ink-4)', display: 'inline-block' }} />
+              Try asking
+            </div>
+            <button
+              onClick={() => setShuffleIdx(i => i + 1)}
+              style={{ fontSize: 12, color: 'var(--ink-3)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+            >
+              Shuffle
+            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            {visibleSuggestions.map(s => (
               <button
                 key={s.text}
                 disabled={!canQuery}
-                onClick={() => {
-                  setPrompt(s.text)
-                  textareaRef.current?.focus()
-                  autoResize(textareaRef.current!)
+                onClick={() => { setPrompt(s.text); textareaRef.current?.focus(); autoResize(textareaRef.current!) }}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px',
+                  background: 'var(--surface)', border: '1px solid var(--line)',
+                  borderRadius: 'var(--r)', cursor: canQuery ? 'pointer' : 'not-allowed',
+                  textAlign: 'left', transition: 'border-color 0.12s',
+                  opacity: canQuery ? 1 : 0.45,
                 }}
-                className={clsx(
-                  'flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-all text-left w-full',
-                  canQuery
-                    ? 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-violet-400 dark:hover:border-violet-600 hover:text-violet-700 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20'
-                    : 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50',
-                )}
+                onMouseEnter={e => { if (canQuery) e.currentTarget.style.borderColor = 'var(--accent)' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line)' }}
               >
-                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 whitespace-nowrap flex-shrink-0">
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
+                  textTransform: 'uppercase', letterSpacing: '0.06em',
+                  color: 'var(--accent-ink)', background: 'var(--accent-soft)',
+                  border: '1px solid var(--accent-line)',
+                  borderRadius: 3, padding: '1px 5px', flexShrink: 0, marginTop: 1,
+                }}>
                   {s.tag}
                 </span>
-                <span className="truncate">{s.text}</span>
+                <span style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>{s.text}</span>
               </button>
             ))}
           </div>
@@ -356,7 +388,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
 
         <button
           onClick={resetForDev}
-          className="mt-8 text-[11px] text-gray-300 dark:text-gray-700 hover:text-gray-400 dark:hover:text-gray-600 transition-colors"
+          style={{ marginTop: 32, fontSize: 11, color: 'var(--ink-4)', background: 'none', border: 'none', cursor: 'pointer' }}
         >
           reset quota (dev)
         </button>

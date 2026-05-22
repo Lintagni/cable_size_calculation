@@ -6,6 +6,7 @@ import Calculator from './pages/Calculator'
 import AiPage from './pages/AiPage'
 import Dashboard from './pages/Dashboard'
 import Pricing from './pages/Pricing'
+import Admin from './pages/Admin'
 import PaymentSuccess from './pages/PaymentSuccess'
 import { supabase } from './lib/supabase'
 import { useAuthStore } from './store/authStore'
@@ -59,6 +60,9 @@ export default function App() {
       <Route path="/calculator" element={<ProtectedShell><Calculator /></ProtectedShell>} />
       <Route path="/ai"         element={<ProtectedShell><AiPage /></ProtectedShell>} />
       <Route path="/dashboard"  element={<ProtectedShell><Dashboard /></ProtectedShell>} />
+
+      {/* Admin */}
+      <Route path="/admin" element={<Shell><Admin /></Shell>} />
 
       {/* Misc */}
       <Route path="/payment-success" element={<PaymentSuccess />} />
