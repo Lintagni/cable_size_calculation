@@ -1,11 +1,6 @@
 import { useState } from 'react'
 import { calculateMotorCurrent, calculateLoadCurrent, type MotorInput } from '../../calculators/motorCable'
 
-const inputCls = 'w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
-const cardCls = 'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6'
-const labelCls = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1'
-const headingCls = 'font-semibold text-gray-900 dark:text-gray-100 text-sm uppercase tracking-wide'
-
 const defaultMotor: MotorInput = {
   powerKw: 22,
   voltage: 400,
@@ -16,10 +11,57 @@ const defaultMotor: MotorInput = {
   description: '',
 }
 
+function Panel({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) {
+  return (
+    <section className="panel input-panel">
+      <header className="panel-head">
+        <div>
+          <div className="panel-eyebrow">{eyebrow}</div>
+          <div className="panel-title">{title}</div>
+        </div>
+      </header>
+      <div className="panel-body">{children}</div>
+    </section>
+  )
+}
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="field">
+      <div className="label">
+        <span>{label}</span>
+        {hint && <span className="hint">{hint}</span>}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function Seg({ options, value, onChange }: { options: { v: string | number; label: string }[]; value: string | number; onChange: (v: any) => void }) {
+  return (
+    <div className="seg" style={{ width: '100%' }}>
+      {options.map(o => (
+        <button key={String(o.v)} type="button" className={value === o.v ? 'on' : ''} onClick={() => onChange(o.v)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function Spec({ k, v, accent }: { k: string; v: string; accent?: boolean }) {
+  return (
+    <div className="spec">
+      <span className="k">{k}</span>
+      <span className={`v${accent ? ' accent' : ''}`}>{v}</span>
+    </div>
+  )
+}
+
 export default function MotorCableForm() {
-  const [motor, setMotor] = useState<MotorInput>(defaultMotor)
-  const [result, setResult] = useState<ReturnType<typeof calculateMotorCurrent> | null>(null)
-  const [loadKw, setLoadKw] = useState(10)
+  const [motor, setMotor]           = useState<MotorInput>(defaultMotor)
+  const [result, setResult]         = useState<ReturnType<typeof calculateMotorCurrent> | null>(null)
+  const [loadKw, setLoadKw]         = useState(10)
   const [loadResult, setLoadResult] = useState<number | null>(null)
 
   function set<K extends keyof MotorInput>(k: K, v: MotorInput[K]) {
@@ -27,93 +69,134 @@ export default function MotorCableForm() {
   }
 
   return (
-    <div className="grid lg:grid-cols-2 gap-8">
-      <div className="space-y-4">
-        <div className={cardCls}>
-          <h3 className={`${headingCls} mb-4`}>Motor Details</h3>
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: 'Motor power (kW)', key: 'powerKw', val: motor.powerKw, step: 0.1 },
-              { label: 'Voltage (V)', key: 'voltage', val: motor.voltage, step: 1 },
-              { label: 'Power factor', key: 'powerFactor', val: motor.powerFactor, step: 0.01 },
-              { label: 'Efficiency', key: 'efficiency', val: motor.efficiency, step: 0.01 },
-              { label: 'Starting current ×', key: 'startingCurrentMultiplier', val: motor.startingCurrentMultiplier, step: 0.5 },
-            ].map(f => (
-              <div key={f.key}>
-                <label className={labelCls}>{f.label}</label>
-                <input type="number" step={f.step} className={inputCls}
-                  value={f.val} onChange={e => set(f.key as keyof MotorInput, parseFloat(e.target.value) as MotorInput[keyof MotorInput])} />
+    <div className="calc-body">
+      <div className="calc-inputs">
+
+        <Panel eyebrow="A · Motor" title="Motor Details">
+          <div className="grid-2">
+            <Field label="Motor power" hint="kW">
+              <div className="input-suffix">
+                <input type="number" step={0.1} min={0} className="cc-input"
+                  value={motor.powerKw}
+                  onChange={e => set('powerKw', parseFloat(e.target.value) || 0)} />
+                <span className="suffix">kW</span>
               </div>
-            ))}
-            <div>
-              <label className={labelCls}>Phases</label>
-              <select className={inputCls}
-                value={motor.phases} onChange={e => set('phases', Number(e.target.value) as 1 | 3)}>
-                <option value={3}>3-phase</option>
-                <option value={1}>1-phase</option>
-              </select>
-            </div>
+            </Field>
+            <Field label="Supply">
+              <Seg
+                options={[{ v: 400, label: '400 V (3ph)' }, { v: 230, label: '230 V (1ph)' }]}
+                value={motor.voltage}
+                onChange={v => {
+                  const volt = Number(v) as 230 | 400
+                  set('voltage', volt)
+                  set('phases', volt === 400 ? 3 : 1)
+                }}
+              />
+            </Field>
+            <Field label="Power factor" hint="cos φ">
+              <input type="number" step={0.01} min={0.5} max={1} className="cc-input"
+                value={motor.powerFactor}
+                onChange={e => set('powerFactor', parseFloat(e.target.value) || 0.85)} />
+            </Field>
+            <Field label="Efficiency" hint="η">
+              <input type="number" step={0.01} min={0.5} max={1} className="cc-input"
+                value={motor.efficiency}
+                onChange={e => set('efficiency', parseFloat(e.target.value) || 0.92)} />
+            </Field>
+            <Field label="Starting current" hint="× FLC">
+              <input type="number" step={0.5} min={1} className="cc-input"
+                value={motor.startingCurrentMultiplier}
+                onChange={e => set('startingCurrentMultiplier', parseFloat(e.target.value) || 6)} />
+            </Field>
+            <Field label="Description">
+              <input className="cc-input" placeholder="e.g. Pump P-01"
+                value={motor.description}
+                onChange={e => set('description', e.target.value)} />
+            </Field>
           </div>
-          <button onClick={() => setResult(calculateMotorCurrent(motor))}
-            className="w-full bg-blue-700 text-white font-semibold py-2.5 rounded-lg hover:bg-blue-800 mt-4 text-sm transition-colors">
+          <button type="button"
+            onClick={() => setResult(calculateMotorCurrent(motor))}
+            className="btn btn-accent btn-lg"
+            style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}
+          >
             Calculate Motor Current
           </button>
-        </div>
+        </Panel>
 
-        <div className={cardCls}>
-          <h3 className={`${headingCls} mb-3`}>General Load Current</h3>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className={labelCls}>Load (kW)</label>
-              <input type="number" className={inputCls}
-                value={loadKw} onChange={e => setLoadKw(parseFloat(e.target.value))} />
-            </div>
+        <Panel eyebrow="B · General load" title="Load Current">
+          <div className="grid-2">
+            <Field label="Load power" hint="kW">
+              <div className="input-suffix">
+                <input type="number" className="cc-input"
+                  value={loadKw}
+                  onChange={e => setLoadKw(parseFloat(e.target.value) || 0)} />
+                <span className="suffix">kW</span>
+              </div>
+            </Field>
           </div>
-          <button
+          <button type="button"
             onClick={() => setLoadResult(calculateLoadCurrent({ loadKw, voltage: motor.voltage, phases: motor.phases, powerFactor: motor.powerFactor }))}
-            className="w-full bg-gray-700 dark:bg-gray-600 text-white font-semibold py-2.5 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-500 mt-3 text-sm transition-colors">
+            className="btn btn-lg"
+            style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}
+          >
             Calculate Load Current
           </button>
-        </div>
+        </Panel>
       </div>
 
-      <div className="space-y-4">
-        {result && (
-          <div className={cardCls}>
-            <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-4">Motor Current Results</div>
-            <div className="text-3xl font-bold text-blue-700 dark:text-blue-400 mb-1">{result.fullLoadCurrentA.toFixed(1)} A</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-4">Full load current (FLC)</div>
-            <div className="space-y-2 text-sm">
-              {[
-                ['Full load current', `${result.fullLoadCurrentA.toFixed(2)} A`],
-                ['Starting current', `${result.startingCurrentA.toFixed(1)} A`],
-                ['Design current Ib', `${result.designCurrentIb.toFixed(2)} A`],
-              ].map(([l, v]) => (
-                <div key={l} className="flex justify-between border-b border-gray-50 dark:border-gray-700 pb-1">
-                  <span className="text-gray-500 dark:text-gray-400">{l}</span>
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{v}</span>
+      {/* Results */}
+      <aside className="calc-results">
+        {result || loadResult !== null ? (
+          <div className="results-sticky">
+            {result && (
+              <>
+                <div className="results-head">
+                  <div>
+                    <span className="section-eyebrow">Motor result</span>
+                    <h3>Full load current</h3>
+                  </div>
                 </div>
-              ))}
-            </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
-              Use Ib = {result.designCurrentIb.toFixed(1)} A in the LV Cable Sizing tab to select the cable.
-            </p>
-          </div>
-        )}
+                <div style={{ padding: '20px 20px 0' }}>
+                  <div style={{ fontSize: 48, fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--accent)', lineHeight: 1 }}>
+                    {result.fullLoadCurrentA.toFixed(1)} A
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4 }}>
+                    Full load current (FLC)
+                  </div>
+                </div>
+                <div style={{ padding: '16px 20px 20px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Spec k="Full load current" v={`${result.fullLoadCurrentA.toFixed(2)} A`} />
+                  <Spec k="Starting current" v={`${result.startingCurrentA.toFixed(1)} A`} />
+                  <Spec k="Design current Ib" v={`${result.designCurrentIb.toFixed(2)} A`} accent />
+                </div>
+                <div style={{ padding: '0 20px 20px', fontSize: 11, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)' }}>
+                  Use Ib = {result.designCurrentIb.toFixed(1)} A in LV Cable Sizing
+                </div>
+              </>
+            )}
 
-        {loadResult !== null && (
-          <div className={`${cardCls} text-center`}>
-            <div className="text-xs text-gray-400 dark:text-gray-500 mb-1">General Load Current</div>
-            <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{loadResult.toFixed(2)} A</div>
+            {loadResult !== null && (
+              <>
+                <div style={{ padding: result ? '0 20px 0' : '20px 20px 0', borderTop: result ? '1px solid var(--line)' : 'none', marginTop: result ? 4 : 0 }}>
+                  <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, paddingTop: result ? 16 : 0 }}>
+                    General load result
+                  </div>
+                  <div style={{ fontSize: 36, fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--ink)', lineHeight: 1 }}>
+                    {loadResult.toFixed(2)} A
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4, paddingBottom: 20 }}>
+                    Load current
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-        )}
-
-        {!result && loadResult === null && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-16 text-center text-gray-400 dark:text-gray-500 text-sm">
+        ) : (
+          <div className="results-empty">
             Enter motor details and click Calculate
           </div>
         )}
-      </div>
+      </aside>
     </div>
   )
 }

@@ -75,7 +75,7 @@ export default function AbcCableForm({ externalInputs }: Props) {
           <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2 mb-4">
             Aerial Bundle Conductors (NFC 33-209) — Al/XLPE phase conductors, Al-alloy neutral messenger. Rated for outdoor overhead installation.
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Design Current Ib (A)">
               <input type="number" min={0} value={input.designCurrent || ''}
                 onChange={e => set('designCurrent', parseFloat(e.target.value) || 0)}

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
+import { CheckCircle, XCircle, ChevronDown, ChevronUp, Download } from 'lucide-react'
 import { calculate, type LvCableInput } from '../../calculators/lvCableSizing'
 import { REFERENCE_METHODS } from '../../data/cableTables'
-import ResultsPanel from './ResultsPanel'
+import ResultExplainer from '../AiAssistant/ResultExplainer'
 import type { LvCableResult } from '../../calculators/lvCableSizing'
 
 interface Props {
@@ -10,47 +11,74 @@ interface Props {
 }
 
 const defaultInput: LvCableInput = {
-  description: '',
-  origin: '',
-  destination: '',
-  voltage: 400,
-  phases: 3,
-  frequency: 50,
-  powerFactor: 0.85,
-  designCurrent: 0,
-  protectiveDevice: 'MCCB',
-  deviceRating: 0,
-  referenceMethod: 'C',
-  cableLength: 0,
-  insulation: 'XLPE',
-  cableConfig: 'multicore',
-  conductorMaterial: 'copper',
-  parallelCircuits: 1,
-  ambientTemp: 30,
-  groupedCircuits: 1,
+  description: '', origin: '', destination: '',
+  voltage: 400, phases: 3, frequency: 50, powerFactor: 0.85,
+  designCurrent: 0, protectiveDevice: 'MCCB', deviceRating: 0,
+  referenceMethod: 'C', cableLength: 0, insulation: 'XLPE',
+  cableConfig: 'multicore', conductorMaterial: 'copper',
+  parallelCircuits: 1, ambientTemp: 30, groupedCircuits: 1,
   thermalInsulation: 'none',
 }
 
-function Field({ label, children, note }: { label: string; children: React.ReactNode; note?: string }) {
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function Panel({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+    <section className="panel input-panel">
+      <header className="panel-head">
+        <div>
+          <div className="panel-eyebrow">{eyebrow}</div>
+          <div className="panel-title">{title}</div>
+        </div>
+      </header>
+      <div className="panel-body">{children}</div>
+    </section>
+  )
+}
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="field">
+      <div className="label">
+        <span>{label}</span>
+        {hint && <span className="hint">{hint}</span>}
+      </div>
       {children}
-      {note && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{note}</p>}
     </div>
   )
 }
 
-const inputCls = 'w-full border border-gray-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500'
-
-function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={inputCls} />
+function Seg({ options, value, onChange }: { options: { v: string | number; label: string }[]; value: string | number; onChange: (v: any) => void }) {
+  return (
+    <div className="seg" style={{ width: '100%' }}>
+      {options.map(o => (
+        <button
+          key={String(o.v)}
+          type="button"
+          className={value === o.v ? 'on' : ''}
+          onClick={() => onChange(o.v)}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
 }
 
-function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...props} className={inputCls} />
+function Spec({ k, v, ok, fail, accent }: { k: string; v: string | number; ok?: boolean; fail?: boolean; accent?: boolean }) {
+  return (
+    <div className="spec">
+      <span className="k">{k}</span>
+      <span className={`v${ok ? ' ok' : ''}${fail ? ' fail' : ''}${accent ? ' accent' : ''}`}>
+        {ok   && <CheckCircle size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />}
+        {fail && <XCircle     size={11} style={{ verticalAlign: 'middle', marginRight: 4 }} />}
+        {v}
+      </span>
+    </div>
+  )
 }
 
+// ── Main form ─────────────────────────────────────────────────────────────────
 export default function LvCableSizingForm({ externalInputs, onResultChange }: Props) {
   const [input, setInput] = useState<LvCableInput>(defaultInput)
   const [result, setResult] = useState<LvCableResult | null>(null)
@@ -75,97 +103,144 @@ export default function LvCableSizingForm({ externalInputs, onResultChange }: Pr
     onResultChange?.(res)
   }
 
-  const cardCls = 'bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6'
-  const headingCls = 'font-semibold text-gray-900 dark:text-gray-100 mb-4 text-sm uppercase tracking-wide'
-
   return (
-    <div className="grid lg:grid-cols-2 gap-8">
-      {/* Input panel */}
-      <div className="space-y-6">
-        <div className={cardCls}>
-          <h3 className={headingCls}>Circuit Details</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Description">
-              <Input value={input.description} onChange={e => set('description', e.target.value)} placeholder="e.g. MDB to FDB-1F" />
-            </Field>
-            <Field label="Voltage (V)">
-              <Select value={input.voltage} onChange={e => set('voltage', Number(e.target.value) as 230 | 400)}>
-                <option value={400}>400V (3-phase)</option>
-                <option value={230}>230V (1-phase)</option>
-              </Select>
+    <div className="calc-body">
+      {/* ── Input panels ── */}
+      <div className="calc-inputs">
+
+        {/* A · Source */}
+        <Panel eyebrow="A · Supply" title="Source">
+          <div className="grid-2">
+            <Field label="Voltage" hint="V">
+              <Seg
+                options={[{ v: 400, label: '400 V (3ph)' }, { v: 230, label: '230 V (1ph)' }]}
+                value={input.voltage}
+                onChange={v => set('voltage', Number(v) as 230 | 400)}
+              />
             </Field>
             <Field label="Phases">
-              <Select value={input.phases} onChange={e => set('phases', Number(e.target.value) as 1 | 3)}>
-                <option value={3}>3-phase</option>
-                <option value={1}>1-phase</option>
-              </Select>
+              <Seg
+                options={[{ v: 3, label: '3-phase' }, { v: 1, label: '1-phase' }]}
+                value={input.phases}
+                onChange={v => set('phases', Number(v) as 1 | 3)}
+              />
             </Field>
-            <Field label="Power Factor">
-              <Input type="number" min={0.5} max={1} step={0.01} value={input.powerFactor}
-                onChange={e => set('powerFactor', parseFloat(e.target.value))} />
+            <Field label="Power factor" hint="cos φ">
+              <div className="input-suffix">
+                <input
+                  type="number" min={0.5} max={1} step={0.01}
+                  value={input.powerFactor}
+                  onChange={e => set('powerFactor', parseFloat(e.target.value))}
+                  className="cc-input"
+                />
+              </div>
+            </Field>
+            <Field label="Description">
+              <input
+                value={input.description}
+                onChange={e => set('description', e.target.value)}
+                placeholder="e.g. MDB to FDB-1F"
+                className="cc-input"
+              />
             </Field>
           </div>
-        </div>
+        </Panel>
 
-        <div className={cardCls}>
-          <h3 className={headingCls}>Load &amp; Protection</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Design Current Ib (A)" note="Actual load current">
-              <Input type="number" min={0} value={input.designCurrent || ''}
-                onChange={e => set('designCurrent', parseFloat(e.target.value) || 0)} placeholder="e.g. 75" />
+        {/* B · Load & Protection */}
+        <Panel eyebrow="B · Load profile" title="Load &amp; Protection">
+          <div className="grid-2">
+            <Field label="Design current Ib" hint="A">
+              <div className="input-suffix">
+                <input
+                  type="number" min={0}
+                  value={input.designCurrent || ''}
+                  onChange={e => set('designCurrent', parseFloat(e.target.value) || 0)}
+                  placeholder="e.g. 75"
+                  className="cc-input"
+                />
+                <span className="suffix">A</span>
+              </div>
             </Field>
-            <Field label="Protective Device">
-              <Select value={input.protectiveDevice} onChange={e => set('protectiveDevice', e.target.value as LvCableInput['protectiveDevice'])}>
+            <Field label="Protective device">
+              <select
+                value={input.protectiveDevice}
+                onChange={e => set('protectiveDevice', e.target.value as LvCableInput['protectiveDevice'])}
+                className="cc-select"
+              >
                 <option>MCB</option>
                 <option>MCCB</option>
                 <option>ACB</option>
                 <option>BS3036Fuse</option>
-              </Select>
+              </select>
             </Field>
-            <Field label="Device Rating In (A)" note="Nominal current">
-              <Input type="number" min={0} value={input.deviceRating || ''}
-                onChange={e => set('deviceRating', parseFloat(e.target.value) || 0)} placeholder="e.g. 100" />
+            <Field label="Device rating In" hint="A">
+              <div className="input-suffix">
+                <input
+                  type="number" min={0}
+                  value={input.deviceRating || ''}
+                  onChange={e => set('deviceRating', parseFloat(e.target.value) || 0)}
+                  placeholder="e.g. 100"
+                  className="cc-input"
+                />
+                <span className="suffix">A</span>
+              </div>
             </Field>
-            <Field label="Cable Length (m)">
-              <Input type="number" min={0} value={input.cableLength || ''}
-                onChange={e => set('cableLength', parseFloat(e.target.value) || 0)} placeholder="e.g. 25" />
+            <Field label="Cable length" hint="m">
+              <div className="input-suffix">
+                <input
+                  type="number" min={0}
+                  value={input.cableLength || ''}
+                  onChange={e => set('cableLength', parseFloat(e.target.value) || 0)}
+                  placeholder="e.g. 25"
+                  className="cc-input"
+                />
+                <span className="suffix">m</span>
+              </div>
             </Field>
           </div>
-        </div>
+        </Panel>
 
-        <div className={cardCls}>
-          <h3 className={headingCls}>Cable &amp; Installation</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Conductor Material">
-              <Select value={input.conductorMaterial} onChange={e => {
-                const mat = e.target.value as 'copper' | 'aluminium'
-                set('conductorMaterial', mat)
-                // Al minimum 16mm² — reset to multicore if single-core Al
-                if (mat === 'aluminium' && ['E','F','G'].includes(input.referenceMethod)) set('referenceMethod', 'C')
-              }}>
-                <option value="copper">Copper (Cu)</option>
-                <option value="aluminium">Aluminium (Al) — min 16mm²</option>
-              </Select>
+        {/* C · Cable & Installation */}
+        <Panel eyebrow="C · Construction" title="Cable &amp; Installation">
+          <div className="grid-3">
+            <Field label="Conductor">
+              <Seg
+                options={[{ v: 'copper', label: 'Cu' }, { v: 'aluminium', label: 'Al' }]}
+                value={input.conductorMaterial}
+                onChange={v => {
+                  const mat = v as 'copper' | 'aluminium'
+                  set('conductorMaterial', mat)
+                  if (mat === 'aluminium' && ['E', 'F', 'G'].includes(input.referenceMethod)) set('referenceMethod', 'C')
+                }}
+              />
             </Field>
             <Field label="Insulation">
-              <Select value={input.insulation} onChange={e => set('insulation', e.target.value as 'PVC' | 'XLPE')}>
-                <option value="XLPE">XLPE (90°C)</option>
-                <option value="PVC">PVC (70°C)</option>
-              </Select>
+              <Seg
+                options={[{ v: 'XLPE', label: 'XLPE' }, { v: 'PVC', label: 'PVC' }]}
+                value={input.insulation}
+                onChange={v => set('insulation', v as 'PVC' | 'XLPE')}
+              />
             </Field>
-            <Field label="Cable Configuration">
-              <Select value={input.cableConfig} onChange={e => {
-                const cfg = e.target.value as 'single-core' | 'multicore'
-                set('cableConfig', cfg)
-                if (cfg === 'multicore' && ['E','F','G'].includes(input.referenceMethod)) set('referenceMethod', 'C')
-                if (cfg === 'single-core' && ['A1','A2','B1','B2'].includes(input.referenceMethod)) set('referenceMethod', 'E')
-              }}>
-                <option value="multicore">Multicore</option>
-                <option value="single-core">Single-core</option>
-              </Select>
+            <Field label="Configuration">
+              <Seg
+                options={[{ v: 'multicore', label: 'Multi' }, { v: 'single-core', label: 'Single' }]}
+                value={input.cableConfig}
+                onChange={v => {
+                  const cfg = v as 'single-core' | 'multicore'
+                  set('cableConfig', cfg)
+                  if (cfg === 'multicore'    && ['E','F','G'].includes(input.referenceMethod))          set('referenceMethod', 'C')
+                  if (cfg === 'single-core'  && ['A1','A2','B1','B2'].includes(input.referenceMethod)) set('referenceMethod', 'E')
+                }}
+              />
             </Field>
-            <Field label="Reference Method" note="BS7671 Table 4A2">
-              <Select value={input.referenceMethod} onChange={e => set('referenceMethod', e.target.value as LvCableInput['referenceMethod'])}>
+          </div>
+          <div className="grid-2">
+            <Field label="Reference method" hint="Table 4A2">
+              <select
+                value={input.referenceMethod}
+                onChange={e => set('referenceMethod', e.target.value as LvCableInput['referenceMethod'])}
+                className="cc-select"
+              >
                 {REFERENCE_METHODS
                   .filter(m => input.cableConfig === 'single-core'
                     ? ['B1','C','D1','E','F','G'].includes(m.code)
@@ -174,61 +249,255 @@ export default function LvCableSizingForm({ externalInputs, onResultChange }: Pr
                   .map(m => (
                     <option key={m.code} value={m.code}>{m.code} — {m.description}</option>
                   ))}
-              </Select>
+              </select>
             </Field>
-            <Field label="Parallel Circuits">
-              <Input type="number" min={1} max={6} value={input.parallelCircuits}
-                onChange={e => set('parallelCircuits', parseInt(e.target.value) || 1)} />
+            <Field label="Parallel circuits">
+              <input
+                type="number" min={1} max={6}
+                value={input.parallelCircuits}
+                onChange={e => set('parallelCircuits', parseInt(e.target.value) || 1)}
+                className="cc-input"
+              />
             </Field>
           </div>
-        </div>
+        </Panel>
 
-        <div className={cardCls}>
-          <h3 className={headingCls}>Correction Factors</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Ambient Temp (°C)" note="Ca — Table 4B1">
-              <Input type="number" min={10} max={85} value={input.ambientTemp}
-                onChange={e => set('ambientTemp', parseInt(e.target.value) || 30)} />
+        {/* D · Environment */}
+        <Panel eyebrow="D · Correction factors" title="Environment">
+          <div className="grid-3">
+            <Field label="Ambient temp" hint="°C · Ca">
+              <div className="input-suffix">
+                <input
+                  type="number" min={10} max={85}
+                  value={input.ambientTemp}
+                  onChange={e => set('ambientTemp', parseInt(e.target.value) || 30)}
+                  className="cc-input"
+                />
+                <span className="suffix">°C</span>
+              </div>
             </Field>
-            <Field label="Circuits in Group" note="Cg — Table 4C1">
-              <Input type="number" min={1} value={input.groupedCircuits}
-                onChange={e => set('groupedCircuits', parseInt(e.target.value) || 1)} />
+            <Field label="Grouped circuits" hint="Cg">
+              <input
+                type="number" min={1}
+                value={input.groupedCircuits}
+                onChange={e => set('groupedCircuits', parseInt(e.target.value) || 1)}
+                className="cc-input"
+              />
             </Field>
-            <Field label="Thermal Insulation" note="Ci — Table 52.2">
-              <Select value={input.thermalInsulation} onChange={e => set('thermalInsulation', e.target.value as LvCableInput['thermalInsulation'])}>
-                <option value="none">None (Ci = 1.00)</option>
-                <option value="oneSide">One side (Ci = 0.75)</option>
-                <option value="surrounded">Surrounded (Ci = 0.50)</option>
-              </Select>
+            <Field label="VD limit" hint="Sec 525">
+              <Seg
+                options={[{ v: '3', label: '3%' }, { v: '5', label: '5%' }]}
+                value={input.voltage === 230 ? '3' : '5'}
+                onChange={() => {}}
+              />
             </Field>
           </div>
-        </div>
+          <div style={{ marginTop: 16 }}>
+            <label className="cc-toggle">
+              <input
+                type="checkbox"
+                checked={input.thermalInsulation !== 'none'}
+                onChange={e => set('thermalInsulation', e.target.checked ? 'surrounded' : 'none')}
+              />
+              <span className="toggle-track"><span className="toggle-thumb" /></span>
+              <span>Cable surrounded by thermal insulation (Ci = 0.50)</span>
+            </label>
+          </div>
+          {input.thermalInsulation !== 'none' && (
+            <div style={{ marginTop: 12 }}>
+              <Field label="Thermal insulation detail" hint="Ci">
+                <select
+                  value={input.thermalInsulation}
+                  onChange={e => set('thermalInsulation', e.target.value as LvCableInput['thermalInsulation'])}
+                  className="cc-select"
+                >
+                  <option value="oneSide">One side (Ci = 0.75)</option>
+                  <option value="surrounded">Surrounded (Ci = 0.50)</option>
+                </select>
+              </Field>
+            </div>
+          )}
+        </Panel>
 
         {aiApplied && (
-          <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
+          <div className="chip accent" style={{ padding: '10px 14px', borderRadius: 'var(--r)' }}>
             <span>✦</span>
-            <span>AI filled the form — review inputs then click Calculate</span>
+            AI filled the form — review inputs then click Calculate
           </div>
         )}
 
         <button
+          type="button"
           onClick={handleCalculate}
-          className="w-full bg-blue-700 text-white font-semibold py-3 rounded-lg hover:bg-blue-800 transition-colors"
+          className="btn btn-accent btn-lg"
+          style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}
         >
           Calculate Cable Size
         </button>
       </div>
 
-      {/* Results panel */}
-      <div>
+      {/* ── Results panel ── */}
+      <aside className="calc-results">
         {result ? (
-          <ResultsPanel result={result} showAll={showAll} onToggleAll={() => setShowAll(v => !v)} />
+          <ResultsPane result={result} showAll={showAll} onToggleAll={() => setShowAll(v => !v)} />
         ) : (
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 p-16 text-center">
-            <div className="text-gray-400 dark:text-gray-500 text-sm">Enter circuit details and click Calculate</div>
+          <div className="results-empty">
+            Enter circuit details and click Calculate
+          </div>
+        )}
+      </aside>
+    </div>
+  )
+}
+
+// ── Results pane ──────────────────────────────────────────────────────────────
+function ResultsPane({ result, showAll, onToggleAll }: {
+  result: LvCableResult; showAll: boolean; onToggleAll: () => void
+}) {
+  const { results: r, correctionFactors: cf, recommendedCsa, mVperAm, allSizes } = result
+
+  if (!r || allSizes.length === 0) {
+    return (
+      <div className="panel" style={{ padding: 20, color: 'var(--fail)', fontSize: 14 }}>
+        <strong>No cable data found</strong> for the selected combination. Try changing the Reference Method.
+      </div>
+    )
+  }
+
+  return (
+    <div className="results-sticky">
+      {/* Header */}
+      <div className="results-head">
+        <div>
+          <span className="section-eyebrow">Live result</span>
+          <h3>BS7671 compliance</h3>
+        </div>
+        <span className={`chip ${r.compliant ? 'ok' : 'fail'}`}>
+          <span className="dot" />
+          {r.compliant ? 'Pass' : 'Fail'}
+        </span>
+      </div>
+
+      {/* Headline cable size */}
+      <div className="result-headline">
+        <div className="result-headline-label">Selected cable</div>
+        <div className="result-headline-value">
+          <span className="num">{recommendedCsa}</span>
+          <span className="unit">mm²</span>
+        </div>
+        <div className="result-headline-meta">
+          {result.input.conductorMaterial === 'copper' ? 'Cu' : 'Al'} ·{' '}
+          {result.input.insulation} ·{' '}
+          {result.input.cableConfig === 'multicore' ? 'Multicore' : 'Single-core'} ·{' '}
+          Method {result.input.referenceMethod}
+          {result.input.parallelCircuits > 1 && ` · ${result.input.parallelCircuits}× parallel`}
+        </div>
+      </div>
+
+      {/* Current */}
+      <div className="results-section">
+        <h4>Current</h4>
+        <Spec k="Ib · design"   v={`${result.input.designCurrent.toFixed(1)} A`} accent />
+        <Spec k="In · device"   v={`${result.input.deviceRating} A`} />
+        <Spec k="It · tabulated" v={`${r.tabulatedRating.toFixed(1)} A`} />
+        <Spec k="Iz · derated"  v={`${r.deRatedRating.toFixed(1)} A`} ok={r.deRatedRating >= result.input.designCurrent} />
+      </div>
+
+      {/* Correction factors */}
+      <div className="results-section">
+        <h4>Correction factors</h4>
+        <Spec k="Ca · ambient"    v={cf.Ca.toFixed(3)} />
+        <Spec k="Cg · grouping"   v={cf.Cg.toFixed(3)} />
+        <Spec k="Ci · insulation" v={cf.Ci.toFixed(3)} />
+        <Spec k="Cc · device"     v={cf.Cc.toFixed(3)} />
+        <Spec k="Combined"        v={cf.combined.toFixed(3)} accent />
+      </div>
+
+      {/* Voltage drop */}
+      <div className="results-section">
+        <h4>Voltage drop</h4>
+        <Spec k="mV/A/m (r)" v={mVperAm.r} />
+        <Spec k="mV/A/m (x)" v={mVperAm.x} />
+        <Spec k="mV/A/m (z)" v={mVperAm.z} />
+        <Spec k="Voltage drop" v={`${r.voltageDrop.toFixed(3)} V (${r.voltageDropPct.toFixed(2)}%)`} accent />
+        <Spec
+          k={`Max (${r.maxAllowedVdropPct}%)`}
+          v={`${r.maxAllowedVdrop.toFixed(1)} V`}
+          ok={r.voltageDrop <= r.maxAllowedVdrop}
+          fail={r.voltageDrop > r.maxAllowedVdrop}
+        />
+      </div>
+
+      {/* Non-compliance reasons */}
+      {!r.compliant && (
+        <div className="results-section" style={{ color: 'var(--fail)', fontSize: 13 }}>
+          <h4>Issues</h4>
+          {r.reasons.map(reason => (
+            <div key={reason} style={{ padding: '4px 0', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <XCircle size={13} style={{ flexShrink: 0, marginTop: 2 }} />
+              {reason}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* All cable sizes toggle */}
+      <div style={{ borderTop: '1px solid var(--line)' }}>
+        <button
+          type="button"
+          onClick={onToggleAll}
+          className="btn btn-ghost btn-sm"
+          style={{ width: '100%', justifyContent: 'space-between', borderRadius: 0, padding: '12px 22px', fontSize: 13 }}
+        >
+          <span>All cable sizes</span>
+          {showAll ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+        {showAll && (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: 12, fontFamily: 'var(--font-mono)', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'var(--surface-2)', borderBottom: '1px solid var(--line)' }}>
+                  {['CSA', 'It', 'Iz', 'VD (V)', 'VD%', ''].map(h => (
+                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 500, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 10 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {allSizes.map(s => (
+                  <tr
+                    key={s.csa}
+                    style={{
+                      borderBottom: '1px solid var(--line)',
+                      background: s.csa === recommendedCsa ? 'var(--accent-soft)' : undefined,
+                      opacity: s.compliant ? 1 : 0.45,
+                    }}
+                  >
+                    <td style={{ padding: '8px 12px', fontWeight: 500 }}>{s.csa} mm²</td>
+                    <td style={{ padding: '8px 12px' }}>{s.tabulatedRating.toFixed(0)}</td>
+                    <td style={{ padding: '8px 12px' }}>{s.deRatedRating.toFixed(0)}</td>
+                    <td style={{ padding: '8px 12px' }}>{s.voltageDrop.toFixed(2)}</td>
+                    <td style={{ padding: '8px 12px' }}>{s.voltageDropPct.toFixed(1)}</td>
+                    <td style={{ padding: '8px 12px' }}>
+                      {s.compliant
+                        ? <CheckCircle size={13} style={{ color: 'var(--ok)' }} />
+                        : <XCircle     size={13} style={{ color: 'var(--fail)' }} />
+                      }
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
+
+      {/* Actions */}
+      <div className="results-actions">
+        <button className="btn btn-accent" style={{ flex: 1 }}>Save to history</button>
+        <button className="btn"><Download size={14} /></button>
+      </div>
+
+      <ResultExplainer result={result} />
     </div>
   )
 }

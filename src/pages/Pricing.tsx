@@ -1,183 +1,176 @@
-import { CheckCircle, X, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { CheckCircle, X, Plus } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { usePlanStore } from '../store/planStore'
 
-type Feature = { label: string; included: boolean; spacer?: boolean }
-
-const tiers: Array<{
-  name: string; price: string; period: string; description: string
-  cta: string; ctaStyle: string; planValue: 'free' | 'pro' | 'business'
-  highlight?: boolean; badge?: string; badgeStyle?: string
-  features: Feature[]
-}> = [
+const PLANS = [
   {
-    name: 'Free',
-    price: '$0',
-    period: 'forever',
-    description: 'For occasional use and exploring the tool.',
-    cta: 'Get Started',
-    ctaStyle: 'border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800',
-    planValue: 'free' as const,
-    features: [
-      { label: 'LV cable sizing (5/day)',           included: true  },
-      { label: 'Voltage drop check',                included: true  },
-      { label: 'AI circuit assistant (10/month)',   included: true  },
-      { label: 'Calculation history (last 5)',      included: true  },
-      { label: 'Short circuit calculation',         included: false },
-      { label: 'Motor cable sizing',                included: false },
-      { label: 'Aluminium cable sizing',            included: false },
-      { label: 'PDF report export',                 included: false },
-      { label: 'ABC cable calculator',              included: false },
-      { label: 'Busbar sizing',                     included: false },
-    ],
+    name: 'Free', tag: 'Try it',
+    price: { month: 0, year: 0 },
+    blurb: 'For occasional sizing and exploring the methodology.',
+    features: ['LV cable sizing · 5/day', 'Voltage drop check', 'AI assistant · 10/mo', 'Calculation history · last 5'],
+    excluded: ['Short circuit', 'Motor sizing', 'PDF export', 'ABC, Busbar'],
+    cta: 'Get started', ctaClass: 'btn', planValue: 'free' as const, featured: false,
   },
   {
-    name: 'Pro',
-    price: '$12.99',
-    period: '/month',
-    description: 'For practising engineers who need the full BS7671 toolset.',
-    cta: 'Start Free Trial',
-    ctaStyle: 'bg-blue-700 text-white hover:bg-blue-800',
-    highlight: true,
-    planValue: 'pro' as const,
-    badge: 'Most Popular',
-    badgeStyle: 'bg-blue-700 text-white',
-    features: [
-      { label: 'LV cable sizing (unlimited)',       included: true  },
-      { label: 'Voltage drop check',                included: true  },
-      { label: 'AI circuit assistant (200/month)',  included: true  },
-      { label: 'Calculation history (unlimited)',   included: true  },
-      { label: 'Short circuit calculation',         included: true  },
-      { label: 'Motor cable sizing',                included: true  },
-      { label: 'Aluminium cable sizing',            included: true  },
-      { label: 'PDF report export',                 included: true  },
-      { label: 'ABC cable calculator',              included: false },
-      { label: 'Busbar sizing',                     included: false },
-    ],
+    name: 'Pro', tag: 'Practising engineers',
+    price: { month: 12.99, year: 124.7 },
+    blurb: 'For engineers who need the full BS7671 toolset.',
+    features: ['Everything in Free', 'Unlimited LV sizing', 'AI assistant · 200/mo', 'Short circuit · Motor sizing', 'Aluminium sizing', 'PDF report export', 'Unlimited history'],
+    excluded: ['ABC calculator', 'Busbar sizing'],
+    cta: 'Start free trial', ctaClass: 'btn btn-accent', planValue: 'pro' as const, featured: true,
   },
   {
-    name: 'Business',
-    price: '$34.99',
-    period: '/month',
-    description: 'For design firms and consultancies needing every tool.',
-    cta: 'Contact Sales',
-    ctaStyle: 'bg-purple-700 text-white hover:bg-purple-800',
-    planValue: 'business' as const,
-    badge: 'Full Suite',
-    badgeStyle: 'bg-purple-700 text-white',
-    features: [
-      { label: 'Everything in Pro',                    included: true  },
-      { label: 'AI circuit assistant (2,000 credits/mo)', included: true  },
-      { label: 'ABC cable calculator (NFC 33-209)',     included: true  },
-      { label: 'Busbar sizing (Cu & Al)',               included: true  },
-      { label: 'Multi-user team access',               included: true  },
-      { label: 'API access',                           included: true  },
-      { label: 'Priority support',                     included: true  },
-      { label: 'Custom branding on reports',           included: true  },
-      { label: '',                                     included: false, spacer: true },
-      { label: '',                                     included: false, spacer: true },
-    ],
+    name: 'Business', tag: 'Consultancies',
+    price: { month: 34.99, year: 335.9 },
+    blurb: 'For design firms needing every tool, with team access.',
+    features: ['Everything in Pro', 'AI assistant · 2,000/mo', 'ABC cable (NFC 33-209)', 'Busbar sizing (Cu & Al)', 'Multi-user team access', 'API access', 'Priority support', 'Custom branding on reports'],
+    excluded: [],
+    cta: 'Contact sales', ctaClass: 'btn btn-primary', planValue: 'business' as const, featured: false,
   },
 ]
 
+const COMPARE = [
+  { feat: 'LV cable sizing',    ref: 'BS7671 4D1–4E5',     free: '5/day',  pro: 'Unlimited', biz: 'Unlimited' },
+  { feat: 'Voltage drop check', ref: 'Sec 525',            free: true,     pro: true,        biz: true },
+  { feat: 'AI assistant',       ref: 'Claude',             free: '10/mo',  pro: '200/mo',    biz: '2,000/mo' },
+  { feat: 'Short-circuit calc', ref: 'IPSSC + adiabatic',  free: false,    pro: true,        biz: true },
+  { feat: 'Motor cable sizing', ref: 'kW · η · cos φ',     free: false,    pro: true,        biz: true },
+  { feat: 'Aluminium cables',   ref: '',                   free: false,    pro: true,        biz: true },
+  { feat: 'PDF report export',  ref: 'Calculation sheet',  free: false,    pro: true,        biz: true },
+  { feat: 'History',            ref: '',                   free: 'Last 5', pro: 'Unlimited', biz: 'Unlimited' },
+  { feat: 'ABC cable',          ref: 'NFC 33-209',         free: false,    pro: false,       biz: true },
+  { feat: 'Busbar sizing',      ref: 'Cu · Al',            free: false,    pro: false,       biz: true },
+  { feat: 'Team access',        ref: 'Multi-user',         free: false,    pro: false,       biz: true },
+  { feat: 'API access',         ref: '',                   free: false,    pro: false,       biz: true },
+]
+
+const FAQ = [
+  { q: 'Are calculations actually BS7671-compliant?', a: 'Yes — every coefficient is sourced from BS7671:2018 Amendment 2 and the methodology is visible step-by-step. You can audit every intermediate result.' },
+  { q: 'Can I use the PDF reports professionally?', a: 'Pro and Business plans include exportable calculation sheets formatted for inclusion in project documentation, with optional custom branding on Business.' },
+  { q: 'What models power the AI assistant?', a: 'Claude Haiku, Sonnet, and Opus — selectable in the AI panel. Credits vary by model weight. Credits reset monthly.' },
+  { q: 'Do you offer team or volume licensing?', a: 'Business plans include multi-user access. For >20 seats, contact sales for custom volume pricing.' },
+]
+
+function Cell({ val }: { val: boolean | string }) {
+  if (val === true)  return <CheckCircle size={14} style={{ color: 'var(--ok)' }} />
+  if (val === false) return <span style={{ color: 'var(--ink-4)' }}>—</span>
+  return <span className="compare-cell-value">{val}</span>
+}
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <button className="faq-item" onClick={() => setOpen(o => !o)}>
+      <div className="faq-q">
+        <span>{q}</span>
+        <Plus size={14} style={{ transform: open ? 'rotate(45deg)' : 'none', transition: 'transform .2s', flexShrink: 0 }} />
+      </div>
+      {open && <div className="faq-a">{a}</div>}
+    </button>
+  )
+}
+
 export default function Pricing() {
   const { setPlan } = usePlanStore()
+  const [period, setPeriod] = useState<'month' | 'year'>('month')
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-4">
-          Simple, transparent pricing
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 text-lg">
-          Start free. Upgrade when you need the full toolkit.
-        </p>
-      </div>
-
-      {/* AI quota comparison strip */}
-      <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-2xl p-5 mb-10 flex flex-col sm:flex-row items-center justify-center gap-6 text-center">
-        <div className="flex items-center gap-2 text-sm font-medium text-blue-800 dark:text-blue-300">
-          <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-          AI Circuit Assistant credits per month:
-        </div>
-        <div className="flex items-center gap-8">
-          <div>
-            <div className="text-2xl font-bold text-gray-700 dark:text-gray-300">10</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Free</div>
-          </div>
-          <div className="text-gray-300 dark:text-gray-700">→</div>
-          <div>
-            <div className="text-2xl font-bold text-blue-700 dark:text-blue-400">200</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Pro</div>
-          </div>
-          <div className="text-gray-300 dark:text-gray-700">→</div>
-          <div>
-            <div className="text-2xl font-bold text-purple-700 dark:text-purple-400">2000</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">Business</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-8">
-        {tiers.map(tier => (
-          <div
-            key={tier.name}
-            className={`rounded-2xl border p-8 relative flex flex-col ${
-              tier.name === 'Business'
-                ? 'border-purple-400 dark:border-purple-700 shadow-lg shadow-purple-100 dark:shadow-purple-900/30'
-                : tier.highlight
-                  ? 'border-blue-500 dark:border-blue-600 shadow-lg shadow-blue-100 dark:shadow-blue-900/30'
-                  : 'border-gray-200 dark:border-gray-700'
-            } bg-white dark:bg-gray-800`}
-          >
-            {tier.badge && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className={`${tier.badgeStyle} text-xs font-semibold px-3 py-1 rounded-full whitespace-nowrap`}>
-                  {tier.badge}
-                </span>
-              </div>
-            )}
-
-            <div className="mb-6">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">{tier.name}</h2>
-                {tier.name === 'Pro' && <Sparkles className="w-4 h-4 text-blue-500" />}
-              </div>
-              <div className="mt-2 flex items-baseline gap-1">
-                <span className="text-4xl font-bold text-gray-900 dark:text-gray-100">{tier.price}</span>
-                <span className="text-gray-500 dark:text-gray-400 text-sm">{tier.period}</span>
-              </div>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">{tier.description}</p>
-            </div>
-
-            <ul className="space-y-3 mb-8 flex-1">
-              {tier.features.map((f, i) => f.spacer ? (
-                <li key={i} className="h-5" />
-              ) : (
-                <li key={f.label} className="flex items-center gap-3 text-sm">
-                  {f.included
-                    ? <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                    : <X className="w-4 h-4 text-gray-300 dark:text-gray-600 flex-shrink-0" />
-                  }
-                  <span className={f.included ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600'}>
-                    {f.label}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => setPlan(tier.planValue)}
-              className={`w-full py-3 rounded-lg font-medium text-sm transition-colors ${tier.ctaStyle}`}
-            >
-              {tier.cta}
+    <div className="pricing">
+      <div className="container">
+        {/* Header */}
+        <header className="pricing-head">
+          <span className="section-eyebrow">Pricing</span>
+          <h1>Tools priced by how seriously you size.</h1>
+          <p>Start free. Upgrade when you start billing your time against it.</p>
+          <div className="period-toggle seg" style={{ marginTop: 24, display: 'inline-flex' }}>
+            <button className={period === 'month' ? 'on' : ''} onClick={() => setPeriod('month')}>Monthly</button>
+            <button className={period === 'year'  ? 'on' : ''} onClick={() => setPeriod('year')}>
+              Yearly <span className="save-pill">−20%</span>
             </button>
           </div>
-        ))}
-      </div>
+        </header>
 
-      <p className="text-center text-gray-400 dark:text-gray-500 text-sm mt-8">
-        All prices in USD. Cancel anytime. 7-day free trial on Pro and Business.
-      </p>
+        {/* Plan cards */}
+        <div className="pricing-grid">
+          {PLANS.map(p => {
+            const price = p.price[period]
+            return (
+              <article key={p.name} className={`plan-card${p.featured ? ' featured' : ''}`}>
+                {p.featured && <div className="featured-banner">Recommended</div>}
+                <div className="plan-head">
+                  <span className="plan-tag">{p.tag}</span>
+                  <h3>{p.name}</h3>
+                </div>
+                <div className="plan-price">
+                  {price === 0 ? (
+                    <><span className="amount">$0</span><span className="period">forever</span></>
+                  ) : (
+                    <><span className="currency">$</span>
+                    <span className="amount">{period === 'year' ? (price / 12).toFixed(2) : price.toFixed(2)}</span>
+                    <span className="period">/{period === 'year' ? 'mo, billed yearly' : 'month'}</span></>
+                  )}
+                </div>
+                <p className="plan-blurb">{p.blurb}</p>
+                <button
+                  className={`${p.ctaClass} btn-lg plan-cta`}
+                  onClick={() => setPlan(p.planValue)}
+                >
+                  {p.cta}
+                </button>
+                <ul className="plan-features">
+                  {p.features.map((f, i) => (
+                    <li key={i}><CheckCircle size={13} style={{ color: 'var(--ok)', flexShrink: 0 }} /><span>{f}</span></li>
+                  ))}
+                  {p.excluded.map((f, i) => (
+                    <li key={i} className="excluded"><X size={13} style={{ flexShrink: 0 }} /><span>{f}</span></li>
+                  ))}
+                </ul>
+              </article>
+            )
+          })}
+        </div>
+
+        {/* Compare table */}
+        <div className="compare">
+          <div className="compare-head">
+            <span className="section-eyebrow">Compare</span>
+            <h3>Full feature table</h3>
+          </div>
+          <div className="compare-table">
+            <div className="compare-row compare-head-row">
+              <div>Feature</div>
+              <div>Free</div>
+              <div>Pro</div>
+              <div>Business</div>
+            </div>
+            {COMPARE.map((c, i) => (
+              <div key={i} className="compare-row">
+                <div className="compare-feat">
+                  {c.feat}
+                  {c.ref && <span className="compare-ref">{c.ref}</span>}
+                </div>
+                <div><Cell val={c.free} /></div>
+                <div><Cell val={c.pro} /></div>
+                <div><Cell val={c.biz} /></div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="faq">
+          <span className="section-eyebrow">Questions</span>
+          <h3>Frequently asked</h3>
+          <div className="faq-grid">
+            {FAQ.map((f, i) => <FaqItem key={i} {...f} />)}
+          </div>
+        </div>
+
+        <p style={{ textAlign: 'center', color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', fontSize: 12, marginTop: 48 }}>
+          All prices in USD · Cancel anytime · 7-day free trial on Pro and Business
+        </p>
+      </div>
     </div>
   )
 }

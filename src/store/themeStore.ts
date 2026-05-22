@@ -6,12 +6,21 @@ interface ThemeStore {
   toggle: () => void
 }
 
+function applyTheme(dark: boolean) {
+  // Tailwind dark mode (legacy forms)
+  document.documentElement.classList.toggle('dark', dark)
+  // New CSS design token system
+  document.documentElement.dataset.mode = dark ? 'dark' : 'light'
+}
+
 // Apply before first render
 if (typeof window !== 'undefined') {
   try {
     const s = JSON.parse(localStorage.getItem('cablecalc-theme') || '{}')
-    if (s?.state?.dark) document.documentElement.classList.add('dark')
-  } catch {}
+    applyTheme(!!s?.state?.dark)
+  } catch {
+    applyTheme(false)
+  }
 }
 
 export const useThemeStore = create<ThemeStore>()(
@@ -20,7 +29,7 @@ export const useThemeStore = create<ThemeStore>()(
       dark: false,
       toggle: () => set(s => {
         const next = !s.dark
-        document.documentElement.classList.toggle('dark', next)
+        applyTheme(next)
         return { dark: next }
       }),
     }),
