@@ -25,12 +25,21 @@ function greeting() {
 }
 
 const SUGGESTIONS = [
-  { tag: 'LV Cable',  text: '22kW motor, 400V 3-phase, 35m clipped to wall' },
-  { tag: 'LV Cable',  text: 'Size a cable from MDB to a DB, 45kW load, 25m' },
-  { tag: 'LV Cable',  text: 'Submain 100A, 400V, 3-phase, 40m in free air' },
-  { tag: 'ABC Cable', text: 'Overhead ABC cable for 150A load, 300m run' },
-  { tag: 'Busbar',    text: 'Size copper busbars for 800A in enclosed panel at 45°C' },
-  { tag: 'BS7671',    text: 'What grouping factor applies to 4 circuits in trunking?' },
+  { tag: 'LV Cable',  text: '22kW motor, 35m run' },
+  { tag: 'LV Cable',  text: 'MDB → DB-03, 45kW' },
+  { tag: 'LV Cable',  text: '100A submain, 40m' },
+  { tag: 'ABC Cable', text: '150A overhead, 300m run' },
+  { tag: 'Busbar',    text: '800A copper busbars' },
+  { tag: 'BS7671',    text: 'Cg for 4 circuits?' },
+]
+
+const SUGGESTIONS_FULL = [
+  '22kW motor, 400V 3-phase, 35m clipped to wall',
+  'Size a cable from MDB to a DB, 45kW load, 25m',
+  'Submain 100A, 400V, 3-phase, 40m in free air',
+  'Overhead ABC cable for 150A load, 300m run',
+  'Size copper busbars for 800A in enclosed panel at 45°C',
+  'What grouping factor applies to 4 circuits in trunking?',
 ]
 
 const MODEL_DOT: Record<AiModelId, string> = {
@@ -179,7 +188,7 @@ function ResponseModelTag({ modelId }: { modelId: AiModelId }) {
 // ── Main panel ────────────────────────────────────────────────────────────────
 export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   const { plan } = usePlanStore()
-  const { record, consume, resetForDev } = useAiQuotaStore()
+  const { record, consume } = useAiQuotaStore()
   const { modelId } = useAiModelStore()
 
   const quota     = PLAN_MONTHLY_QUOTA[plan]
@@ -255,7 +264,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
         </div>
 
         {/* Greeting */}
-        <h1 style={{ fontSize: 42, fontWeight: 800, color: 'var(--ink)', marginBottom: 10, textAlign: 'center', lineHeight: 1.1 }}>
+        <h1 style={{ fontSize: 64, fontWeight: 800, color: 'var(--ink)', marginBottom: 10, textAlign: 'center', lineHeight: 1.05 }}>
           {greeting()}, Engineer.
         </h1>
         <p style={{ color: 'var(--ink-3)', marginBottom: 32, textAlign: 'center', fontSize: 15, maxWidth: 480 }}>
@@ -356,42 +365,44 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
             </button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-            {visibleSuggestions.map(s => (
+            {visibleSuggestions.map((s, i) => (
               <button
                 key={s.text}
                 disabled={!canQuery}
-                onClick={() => { setPrompt(s.text); textareaRef.current?.focus(); autoResize(textareaRef.current!) }}
+                onClick={() => {
+                  const full = SUGGESTIONS_FULL[(shuffleIdx % 2 === 0 ? 0 : 3) + i] ?? s.text
+                  setPrompt(full); textareaRef.current?.focus(); autoResize(textareaRef.current!)
+                }}
                 style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px',
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px',
                   background: 'var(--surface)', border: '1px solid var(--line)',
                   borderRadius: 'var(--r)', cursor: canQuery ? 'pointer' : 'not-allowed',
                   textAlign: 'left', transition: 'border-color 0.12s',
-                  opacity: canQuery ? 1 : 0.45,
+                  opacity: canQuery ? 1 : 0.45, overflow: 'hidden',
                 }}
                 onMouseEnter={e => { if (canQuery) e.currentTarget.style.borderColor = 'var(--accent)' }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line)' }}
               >
                 <span style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
+                  fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
                   textTransform: 'uppercase', letterSpacing: '0.06em',
                   color: 'var(--accent-ink)', background: 'var(--accent-soft)',
                   border: '1px solid var(--accent-line)',
-                  borderRadius: 3, padding: '1px 5px', flexShrink: 0, marginTop: 1,
+                  borderRadius: 3, padding: '2px 5px', flexShrink: 0, whiteSpace: 'nowrap',
                 }}>
                   {s.tag}
                 </span>
-                <span style={{ fontSize: 12, color: 'var(--ink-2)', lineHeight: 1.4 }}>{s.text}</span>
+                <span style={{
+                  fontSize: 12, color: 'var(--ink-2)', flex: 1,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {s.text}
+                </span>
+                <span style={{ color: 'var(--ink-4)', fontSize: 12, flexShrink: 0 }}>→</span>
               </button>
             ))}
           </div>
         </div>
-
-        <button
-          onClick={resetForDev}
-          style={{ marginTop: 32, fontSize: 11, color: 'var(--ink-4)', background: 'none', border: 'none', cursor: 'pointer' }}
-        >
-          reset quota (dev)
-        </button>
 
         {showBuyModal && <BuyCreditsModal onClose={() => setShowBuyModal(false)} />}
       </div>
