@@ -1,52 +1,54 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  Zap, Sparkles, TrendingDown, AlertTriangle, Cpu, Radio,
-  LayoutGrid, Clock, ChevronRight, Lock, ArrowUpRight, Download,
+  Zap, TrendingDown, AlertTriangle, Cpu, Radio,
+  LayoutGrid, ChevronRight, Lock, ArrowUpRight, Download, Sparkles, Clock,
 } from 'lucide-react'
-import AiChatPanel from '../components/AiAssistant/AiChatPanel'
 import LvCableSizingForm from '../components/calculator/LvCableSizingForm'
 import VoltageDropForm from '../components/calculator/VoltageDropForm'
 import ShortCircuitForm from '../components/calculator/ShortCircuitForm'
 import MotorCableForm from '../components/calculator/MotorCableForm'
 import AbcCableForm from '../components/calculator/AbcCableForm'
 import BusbarForm from '../components/calculator/BusbarForm'
-import HistoryPanel from '../components/calculator/HistoryPanel'
 import { usePlanStore } from '../store/planStore'
 import { useAiQuotaStore, getRemaining, PLAN_MONTHLY_QUOTA } from '../store/aiQuotaStore'
-import { useHistoryStore, type CalcType } from '../store/historyStore'
-import type { FillAction } from '../lib/claude'
+import { useHistoryStore } from '../store/historyStore'
+import { usePendingActionStore } from '../store/pendingActionStore'
 import type { LvCableResult, LvCableInput } from '../calculators/lvCableSizing'
 import type { AbcInput } from '../calculators/abcCableSizing'
 import type { BusbarInput } from '../calculators/busbarSizing'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Plan   = 'free' | 'pro' | 'business'
-type TabId  = 'ai' | 'lv' | 'vdrop' | 'sc' | 'motor' | 'abc' | 'busbar' | 'history'
+type Plan  = 'free' | 'pro' | 'business'
+type TabId = 'lv' | 'vdrop' | 'sc' | 'motor' | 'abc' | 'busbar'
 
 const PLAN_RANK: Record<Plan, number> = { free: 0, pro: 1, business: 2 }
 function planAllows(userPlan: Plan, minPlan: string) {
   return PLAN_RANK[userPlan] >= PLAN_RANK[minPlan as Plan]
 }
 
-const TABS: {
-  id: TabId; label: string; Icon: React.ComponentType<{ size?: number }>
-  minPlan: string; short?: string
-}[] = [
-  { id: 'ai',      label: 'AI Assistant',   Icon: Sparkles,      minPlan: 'free' },
-  { id: 'lv',      label: 'LV Cable',       Icon: Zap,           minPlan: 'free' },
-  { id: 'vdrop',   label: 'Voltage Drop',   Icon: TrendingDown,  minPlan: 'free' },
-  { id: 'sc',      label: 'Short Circuit',  Icon: AlertTriangle, minPlan: 'pro'  },
-  { id: 'motor',   label: 'Motor Cable',    Icon: Cpu,           minPlan: 'pro'  },
-  { id: 'abc',     label: 'ABC Cable',      Icon: Radio,         minPlan: 'business' },
-  { id: 'busbar',  label: 'Busbar Sizing',  Icon: LayoutGrid,    minPlan: 'business' },
-  { id: 'history', label: 'History',        Icon: Clock,         minPlan: 'free' },
+const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ size?: number }>; minPlan: string }[] = [
+  { id: 'lv',     label: 'LV Cable',      Icon: Zap,           minPlan: 'free' },
+  { id: 'vdrop',  label: 'Voltage Drop',  Icon: TrendingDown,  minPlan: 'free' },
+  { id: 'sc',     label: 'Short Circuit', Icon: AlertTriangle, minPlan: 'pro'  },
+  { id: 'motor',  label: 'Motor Cable',   Icon: Cpu,           minPlan: 'pro'  },
+  { id: 'abc',    label: 'ABC Cable',     Icon: Radio,         minPlan: 'business' },
+  { id: 'busbar', label: 'Busbar Sizing', Icon: LayoutGrid,    minPlan: 'business' },
 ]
 
 const TAB_LABELS: Record<TabId, string> = {
-  ai: 'AI Assistant', lv: 'LV Cable Sizing', vdrop: 'Voltage Drop',
-  sc: 'Short Circuit', motor: 'Motor Cable', abc: 'ABC Cable',
-  busbar: 'Busbar Sizing', history: 'History',
+  lv: 'LV Cable Sizing', vdrop: 'Voltage Drop',
+  sc: 'Short Circuit', motor: 'Motor Cable',
+  abc: 'ABC Cable', busbar: 'Busbar Sizing',
+}
+
+const TAB_DESC: Record<TabId, string> = {
+  lv:     'Single-circuit sizing per BS7671 Appendix 4. Inputs update results live.',
+  vdrop:  'Voltage drop check per BS7671 Section 525.',
+  sc:     'IPSSC calculation and adiabatic withstand check.',
+  motor:  'Derive design current from motor kW, efficiency and power factor.',
+  abc:    'Aerial Bundle Conductor sizing per NFC 33-209.',
+  busbar: 'Busbar sizing per IEC 60439 / BS EN 61439.',
 }
 
 // ─── Upgrade banner ───────────────────────────────────────────────────────────
@@ -55,14 +57,9 @@ function UpgradeBanner({ tier }: { tier: 'pro' | 'business' }) {
   return (
     <div className="upgrade-banner">
       <div style={{
-        width: 48, height: 48,
-        borderRadius: 'var(--r-lg)',
-        background: 'var(--accent-soft)',
-        border: '1px solid var(--accent-line)',
-        display: 'grid',
-        placeItems: 'center',
-        margin: '0 auto',
-        color: 'var(--accent-ink)',
+        width: 48, height: 48, borderRadius: 'var(--r-lg)',
+        background: 'var(--accent-soft)', border: '1px solid var(--accent-line)',
+        display: 'grid', placeItems: 'center', margin: '0 auto', color: 'var(--accent-ink)',
       }}>
         <Lock size={20} />
       </div>
@@ -79,20 +76,55 @@ function UpgradeBanner({ tier }: { tier: 'pro' | 'business' }) {
   )
 }
 
-// ─── Main calculator page ─────────────────────────────────────────────────────
-export default function Calculator() {
-  const { plan, setPlan } = usePlanStore()
-  const { record }        = useAiQuotaStore()
-  const { push }          = useHistoryStore()
+// ─── Project meta bar ─────────────────────────────────────────────────────────
+interface Meta { project: string; circuitId: string; designer: string; system: string }
 
-  const [active, setActive]               = useState<TabId>('lv')
+function MetaField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0 }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        {label}
+      </span>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="—"
+        style={{
+          background: 'none', border: 'none', outline: 'none', padding: 0,
+          fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600,
+          color: 'var(--ink)', width: '100%',
+        }}
+      />
+    </div>
+  )
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+export default function Calculator() {
+  const { plan, setPlan }  = usePlanStore()
+  const { record }         = useAiQuotaStore()
+  const { push }           = useHistoryStore()
+  const { action: pending, clearAction } = usePendingActionStore()
+
+  const [active, setActive]             = useState<TabId>('lv')
   const [currentResult, setCurrentResult] = useState<LvCableResult | null>(null)
-  const [lvInputs, setLvInputs]           = useState<Partial<LvCableInput> | null>(null)
-  const [abcInputs, setAbcInputs]         = useState<Partial<AbcInput> | null>(null)
-  const [busbarInputs, setBusbarInputs]   = useState<Partial<BusbarInput> | null>(null)
+  const [lvInputs, setLvInputs]         = useState<Partial<LvCableInput> | null>(null)
+  const [abcInputs, setAbcInputs]       = useState<Partial<AbcInput> | null>(null)
+  const [busbarInputs, setBusbarInputs] = useState<Partial<BusbarInput> | null>(null)
+  const [meta, setMeta]                 = useState<Meta>({ project: '', circuitId: '', designer: '', system: 'TN-S 400V 3ph' })
+  const [lastUpdated, setLastUpdated]   = useState<number | null>(null)
 
   const aiQuota     = PLAN_MONTHLY_QUOTA[plan as Plan]
   const aiRemaining = getRemaining(record, plan as Plan)
+
+  // Apply pending fill action from AI page
+  useEffect(() => {
+    if (!pending) return
+    if (pending.action === 'fill_form')   { setLvInputs({ ...pending.inputs });     setActive('lv') }
+    if (pending.action === 'fill_abc')    { setAbcInputs({ ...pending.inputs });    setActive('abc') }
+    if (pending.action === 'fill_busbar') { setBusbarInputs({ ...pending.inputs }); setActive('busbar') }
+    clearAction()
+  }, [pending]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-save LV results to history
   const prevResultId = useRef<string | null>(null)
@@ -101,6 +133,7 @@ export default function Calculator() {
     const key = `${currentResult.recommendedCsa}-${lvInputs.designCurrent}-${lvInputs.cableLength}`
     if (key === prevResultId.current) return
     prevResultId.current = key
+    setLastUpdated(Date.now())
     push({
       type: 'lv',
       summary: `${currentResult.recommendedCsa}mm² ${lvInputs.insulation ?? 'XLPE'} · ${lvInputs.designCurrent}A · Method ${lvInputs.referenceMethod ?? 'C'}`,
@@ -109,20 +142,16 @@ export default function Calculator() {
     })
   }, [currentResult]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleFillAction(action: FillAction) {
-    if (action.action === 'fill_form')   { setActive('lv');     setLvInputs({ ...action.inputs }) }
-    if (action.action === 'fill_abc')    { setActive('abc');    setAbcInputs({ ...action.inputs }) }
-    if (action.action === 'fill_busbar') { setActive('busbar'); setBusbarInputs({ ...action.inputs }) }
+  function setMetaField(key: keyof Meta, val: string) {
+    setMeta(prev => ({ ...prev, [key]: val }))
   }
 
-  function handleHistoryRestore(type: CalcType, inputs: Record<string, unknown>) {
-    if (type === 'lv')     { setLvInputs(inputs as Partial<LvCableInput>); setActive('lv') }
-    else if (type === 'abc')    { setAbcInputs(inputs as Partial<AbcInput>); setActive('abc') }
-    else if (type === 'busbar') { setBusbarInputs(inputs as Partial<BusbarInput>); setActive('busbar') }
-    else setActive(type)
+  function timeAgo(ts: number) {
+    const d = Math.floor((Date.now() - ts) / 1000)
+    if (d < 60) return 'just now'
+    if (d < 3600) return `${Math.floor(d / 60)}m ago`
+    return `${Math.floor(d / 3600)}h ago`
   }
-
-  const isAI = active === 'ai'
 
   return (
     <div className="calc grid-bg" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -130,6 +159,7 @@ export default function Calculator() {
       {/* ── Calc header ── */}
       <div className="calc-head">
         <div className="container">
+
           {/* Breadcrumb */}
           <div className="breadcrumb">
             <span>Workspace</span>
@@ -143,22 +173,13 @@ export default function Calculator() {
           <div className="calc-head-row">
             <div>
               <h1>{TAB_LABELS[active]}</h1>
-              <p>
-                {active === 'ai'      && 'Describe a circuit — AI fills the right calculator automatically.'}
-                {active === 'lv'      && 'Single-circuit sizing per BS7671 Appendix 4. Inputs update results live.'}
-                {active === 'vdrop'   && 'Voltage drop check per BS7671 Section 525.'}
-                {active === 'sc'      && 'IPSSC calculation and adiabatic withstand check.'}
-                {active === 'motor'   && 'Derive design current from motor kW, efficiency and power factor.'}
-                {active === 'abc'     && 'Aerial Bundle Conductor sizing per NFC 33-209.'}
-                {active === 'busbar'  && 'Busbar sizing per IEC 60439 / BS EN 61439.'}
-                {active === 'history' && 'Your saved calculations — searchable and re-openable.'}
-              </p>
+              <p>{TAB_DESC[active]}</p>
             </div>
             <div className="calc-head-actions">
-              <button className="btn" onClick={() => setActive('history')}>
+              <Link to="/dashboard" className="btn">
                 <Clock size={14} /> Recent
-              </button>
-              <button className="btn" onClick={() => setActive('ai')}>
+              </Link>
+              <Link to="/ai" className="btn">
                 <Sparkles size={14} /> Ask AI
                 {aiQuota !== -1 && (
                   <span style={{
@@ -166,17 +187,51 @@ export default function Calculator() {
                     background: aiRemaining === 0 ? 'var(--fail-soft)' : 'var(--accent-soft)',
                     color: aiRemaining === 0 ? 'var(--fail)' : 'var(--accent-ink)',
                     border: `1px solid ${aiRemaining === 0 ? 'color-mix(in oklch, var(--fail) 30%, transparent)' : 'var(--accent-line)'}`,
-                    borderRadius: 4,
-                    padding: '1px 5px',
-                    marginLeft: 2,
+                    borderRadius: 4, padding: '1px 5px', marginLeft: 2,
                   }}>
                     {aiRemaining}
                   </span>
                 )}
-              </button>
+              </Link>
               <button className="btn btn-primary">
                 <Download size={14} /> Export PDF
               </button>
+            </div>
+          </div>
+
+          {/* Project meta bar */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
+            gap: 0,
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
+            borderRadius: 'var(--r)',
+            overflow: 'hidden',
+            marginBottom: 4,
+          }}>
+            {[
+              { label: 'Project',      key: 'project'   as keyof Meta },
+              { label: 'Circuit ID',   key: 'circuitId' as keyof Meta },
+              { label: 'Designer',     key: 'designer'  as keyof Meta },
+              { label: 'System',       key: 'system'    as keyof Meta },
+            ].map((f, i) => (
+              <div key={f.key} style={{
+                padding: '10px 16px',
+                borderRight: i < 3 ? '1px solid var(--line)' : 'none',
+              }}>
+                <MetaField label={f.label} value={meta[f.key]} onChange={v => setMetaField(f.key, v)} />
+              </div>
+            ))}
+            <div style={{ padding: '10px 16px' }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                Last Updated
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: lastUpdated ? 'var(--ok)' : 'var(--ink-3)' }}>
+                {lastUpdated ? (
+                  <><span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'var(--ok)', marginRight: 6, verticalAlign: 'middle' }} />{timeAgo(lastUpdated)}</>
+                ) : '—'}
+              </div>
             </div>
           </div>
 
@@ -189,20 +244,16 @@ export default function Calculator() {
               return (
                 <button
                   key={tab.id}
-                  className={`calc-tab${active === tab.id ? ' active' : ''}${!allowed ? ' opacity-50' : ''}`}
+                  className={`calc-tab${active === tab.id ? ' active' : ''}`}
                   onClick={() => setActive(tab.id)}
-                  style={{ opacity: !allowed ? 0.5 : undefined }}
+                  style={{ opacity: !allowed ? 0.45 : undefined }}
                   title={!allowed ? `${isPro ? 'Pro' : 'Business'} plan required` : undefined}
                 >
                   <tab.Icon size={13} />
                   {tab.label}
                   {!allowed && <Lock size={11} style={{ color: 'var(--ink-4)' }} />}
-                  {allowed && isPro && (
-                    <span className="tab-badge">PRO</span>
-                  )}
-                  {allowed && isBiz && (
-                    <span className="tab-badge">BIZ</span>
-                  )}
+                  {allowed && isPro  && <span className="tab-badge">PRO</span>}
+                  {allowed && isBiz  && <span className="tab-badge">BIZ</span>}
                 </button>
               )
             })}
@@ -220,31 +271,16 @@ export default function Calculator() {
         </div>
       </div>
 
-      {/* ── Content ── */}
-      <div style={{ flex: 1, overflow: isAI ? 'hidden' : 'auto' }}>
-        {/* AI — full height, always mounted */}
-        <div style={{ display: isAI ? 'block' : 'none', height: isAI ? 'calc(100vh - 160px)' : 0 }}>
-          <AiChatPanel currentResult={currentResult} onFillAction={handleFillAction} />
+      {/* ── Calculator forms ── */}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        <div className="container" style={{ paddingTop: 32, paddingBottom: 48 }}>
+          {active === 'lv'     && <LvCableSizingForm externalInputs={lvInputs} onResultChange={setCurrentResult} />}
+          {active === 'vdrop'  && <VoltageDropForm />}
+          {active === 'sc'     && (planAllows(plan as Plan, 'pro')      ? <ShortCircuitForm /> : <UpgradeBanner tier="pro" />)}
+          {active === 'motor'  && (planAllows(plan as Plan, 'pro')      ? <MotorCableForm />  : <UpgradeBanner tier="pro" />)}
+          {active === 'abc'    && (planAllows(plan as Plan, 'business') ? <AbcCableForm externalInputs={abcInputs} /> : <UpgradeBanner tier="business" />)}
+          {active === 'busbar' && (planAllows(plan as Plan, 'business') ? <BusbarForm externalInputs={busbarInputs} /> : <UpgradeBanner tier="business" />)}
         </div>
-
-        {/* History */}
-        {active === 'history' && (
-          <div className="container" style={{ paddingTop: 32, paddingBottom: 48 }}>
-            <HistoryPanel onRestore={handleHistoryRestore} />
-          </div>
-        )}
-
-        {/* Calculator forms */}
-        {active !== 'ai' && active !== 'history' && (
-          <div className="container" style={{ paddingTop: 32, paddingBottom: 48 }}>
-            {active === 'lv'     && <LvCableSizingForm externalInputs={lvInputs} onResultChange={setCurrentResult} />}
-            {active === 'vdrop'  && <VoltageDropForm />}
-            {active === 'sc'     && (planAllows(plan as Plan, 'pro')      ? <ShortCircuitForm /> : <UpgradeBanner tier="pro" />)}
-            {active === 'motor'  && (planAllows(plan as Plan, 'pro')      ? <MotorCableForm />  : <UpgradeBanner tier="pro" />)}
-            {active === 'abc'    && (planAllows(plan as Plan, 'business') ? <AbcCableForm externalInputs={abcInputs} /> : <UpgradeBanner tier="business" />)}
-            {active === 'busbar' && (planAllows(plan as Plan, 'business') ? <BusbarForm externalInputs={busbarInputs} /> : <UpgradeBanner tier="business" />)}
-          </div>
-        )}
       </div>
     </div>
   )

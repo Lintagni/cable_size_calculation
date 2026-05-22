@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Landing from './pages/Landing'
 import Calculator from './pages/Calculator'
+import AiPage from './pages/AiPage'
 import Dashboard from './pages/Dashboard'
 import Pricing from './pages/Pricing'
 import PaymentSuccess from './pages/PaymentSuccess'
@@ -11,12 +12,21 @@ import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import { loadCableData } from './lib/loadCableData'
 
-function PublicLayout({ children }: { children: React.ReactNode }) {
+function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors">
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Navbar />
       {children}
     </div>
+  )
+}
+
+function ProtectedShell({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <Navbar />
+      {children}
+    </ProtectedRoute>
   )
 }
 
@@ -24,16 +34,13 @@ export default function App() {
   const { _setSession, loadProfile } = useAuthStore()
 
   useEffect(() => {
-    // Load BS7671 cable data from Supabase (falls back to hardcoded defaults on error)
     loadCableData()
 
-    // Load existing session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       _setSession(session)
       if (session) loadProfile()
     })
 
-    // Keep session in sync (tab focus, token refresh, sign-out on another tab)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       _setSession(session)
       if (session) loadProfile()
@@ -44,13 +51,16 @@ export default function App() {
 
   return (
     <Routes>
-      {/* App shell — requires auth */}
-      <Route path="/calculator" element={<ProtectedRoute><Calculator /></ProtectedRoute>} />
+      {/* Public pages */}
+      <Route path="/"        element={<Shell><Landing /></Shell>} />
+      <Route path="/pricing" element={<Shell><Pricing /></Shell>} />
 
-      {/* Public pages — standard navbar layout */}
-      <Route path="/"               element={<PublicLayout><Landing /></PublicLayout>} />
-      <Route path="/dashboard"      element={<PublicLayout><Dashboard /></PublicLayout>} />
-      <Route path="/pricing"        element={<PublicLayout><Pricing /></PublicLayout>} />
+      {/* Protected — require Supabase login */}
+      <Route path="/calculator" element={<ProtectedShell><Calculator /></ProtectedShell>} />
+      <Route path="/ai"         element={<ProtectedShell><AiPage /></ProtectedShell>} />
+      <Route path="/dashboard"  element={<ProtectedShell><Dashboard /></ProtectedShell>} />
+
+      {/* Misc */}
       <Route path="/payment-success" element={<PaymentSuccess />} />
     </Routes>
   )

@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { Zap, Loader2, Sparkles } from 'lucide-react'
+import { Loader2, Sparkles, Zap, Shield } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import AuthModal from './AuthModal'
-import clsx from 'clsx'
 
 interface Props {
   children: React.ReactNode
@@ -12,53 +11,56 @@ export default function ProtectedRoute({ children }: Props) {
   const { user, initialised } = useAuthStore()
   const [tab, setTab] = useState<'signin' | 'signup'>('signin')
 
-  // ── Waiting for Supabase session to initialise ─────────────────────────────
+  // Waiting for Supabase session
   if (!initialised) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-violet-400 animate-spin" />
+      <div style={{
+        minHeight: '100vh', background: 'var(--bg)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <Loader2 size={28} style={{ color: 'var(--accent)', animation: 'spin 1s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       </div>
     )
   }
 
-  // ── Not logged in ──────────────────────────────────────────────────────────
+  // Not logged in — show auth wall
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 py-12">
+      <div style={{
+        minHeight: '100vh', background: 'var(--bg)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '48px 24px',
+      }}>
         {/* Brand */}
-        <div className="flex items-center gap-2 mb-8">
-          <Zap className="w-6 h-6 text-yellow-400 fill-yellow-400" />
-          <span className="text-xl font-bold text-white">CableCalc</span>
-          <span className="text-xs text-gray-500 ml-1">BS7671</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 40 }}>
+          <div className="brand-mark">CC</div>
+          <span style={{ fontWeight: 700, fontSize: 18, color: 'var(--ink)' }}>CableCalc</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)' }}>BS7671</span>
         </div>
 
         {/* Heading */}
-        <div className="text-center mb-8 max-w-sm">
-          <div className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-400 bg-violet-950/50 border border-violet-800/50 rounded-full px-3 py-1 mb-4">
-            <Sparkles className="w-3 h-3" />
-            AI-Powered Cable Sizing
+        <div style={{ textAlign: 'center', marginBottom: 32, maxWidth: 400 }}>
+          <div className="chip accent" style={{ margin: '0 auto 16px', display: 'inline-flex' }}>
+            <Sparkles size={12} /> AI-Powered Cable Sizing
           </div>
-          <h1 className="text-2xl font-bold text-white mb-2">
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>
             Sign in to access the calculator
           </h1>
-          <p className="text-gray-400 text-sm">
-            Free account · No credit card required · Credits never expire
+          <p style={{ color: 'var(--ink-3)', fontSize: 14 }}>
+            Free account · No credit card required
           </p>
         </div>
 
         {/* Tab switcher */}
-        <div className="w-full max-w-sm mb-4">
-          <div className="flex bg-gray-800 rounded-xl p-1">
+        <div style={{ width: '100%', maxWidth: 400, marginBottom: 16 }}>
+          <div className="seg" style={{ width: '100%' }}>
             {(['signin', 'signup'] as const).map(t => (
               <button
                 key={t}
+                className={tab === t ? 'on' : ''}
                 onClick={() => setTab(t)}
-                className={clsx(
-                  'flex-1 text-sm font-medium py-2 rounded-lg transition-all',
-                  tab === t
-                    ? 'bg-gray-700 text-white shadow'
-                    : 'text-gray-500 hover:text-gray-300',
-                )}
               >
                 {t === 'signin' ? 'Sign in' : 'Sign up free'}
               </button>
@@ -66,23 +68,27 @@ export default function ProtectedRoute({ children }: Props) {
           </div>
         </div>
 
-        {/* Auth form — not dismissable here, it IS the page */}
+        {/* Auth form */}
         <AuthModal
           defaultTab={tab}
           onClose={() => {/* not dismissable on this page */}}
           embedded
         />
 
-        {/* Features reminder */}
-        <div className="mt-8 grid grid-cols-3 gap-3 text-center max-w-sm w-full">
+        {/* Feature pills */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 32, width: '100%', maxWidth: 400 }}>
           {[
-            { label: 'BS7671 compliant', sub: 'IET Wiring Regs' },
-            { label: '10 free credits', sub: 'Every month' },
-            { label: 'Credits never expire', sub: 'Carry over' },
+            { Icon: Shield, label: 'BS7671 compliant', sub: 'IET Wiring Regs' },
+            { Icon: Zap,    label: '10 free credits',  sub: 'Every month' },
+            { Icon: Sparkles, label: 'AI assistant',   sub: 'Claude powered' },
           ].map(f => (
-            <div key={f.label} className="bg-gray-900 border border-gray-800 rounded-xl p-3">
-              <p className="text-white text-xs font-semibold">{f.label}</p>
-              <p className="text-gray-500 text-[10px] mt-0.5">{f.sub}</p>
+            <div key={f.label} style={{
+              background: 'var(--surface)', border: '1px solid var(--line)',
+              borderRadius: 'var(--r)', padding: '12px 10px', textAlign: 'center',
+            }}>
+              <f.Icon size={14} style={{ color: 'var(--accent)', margin: '0 auto 6px' }} />
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)' }}>{f.label}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 2 }}>{f.sub}</div>
             </div>
           ))}
         </div>
@@ -90,6 +96,5 @@ export default function ProtectedRoute({ children }: Props) {
     )
   }
 
-  // ── Authenticated ──────────────────────────────────────────────────────────
   return <>{children}</>
 }

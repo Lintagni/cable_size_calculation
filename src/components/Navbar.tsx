@@ -7,11 +7,11 @@ import { useState } from 'react'
 import AuthModal from './auth/AuthModal'
 
 const navItems = [
-  { to: '/',           label: 'Home',    Icon: Home },
+  { to: '/',           label: 'Home',    Icon: Home       },
   { to: '/calculator', label: 'Calc',    Icon: Calculator },
-  { to: '/calculator', label: 'AI',      Icon: Sparkles, hash: '#ai' },
-  { to: '/dashboard',  label: 'History', Icon: Clock },
-  { to: '/pricing',    label: 'Pricing', Icon: Tag },
+  { to: '/ai',         label: 'AI',      Icon: Sparkles   },
+  { to: '/dashboard',  label: 'History', Icon: Clock      },
+  { to: '/pricing',    label: 'Pricing', Icon: Tag        },
 ]
 
 export default function Navbar() {
@@ -23,13 +23,12 @@ export default function Navbar() {
 
   const initials = user?.email?.slice(0, 2).toUpperCase() ?? '?'
 
-  // Determine active tab
-  const active = pathname === '/'
-    ? 'Home'
-    : pathname.startsWith('/calculator') ? 'Calc'
-    : pathname.startsWith('/dashboard') ? 'History'
-    : pathname.startsWith('/pricing') ? 'Pricing'
-    : ''
+  const active =
+    pathname === '/'                  ? 'Home'    :
+    pathname.startsWith('/calculator') ? 'Calc'    :
+    pathname.startsWith('/ai')         ? 'AI'      :
+    pathname.startsWith('/dashboard')  ? 'History' :
+    pathname.startsWith('/pricing')    ? 'Pricing' : ''
 
   return (
     <>
@@ -44,7 +43,7 @@ export default function Navbar() {
 
         {/* Pill nav — desktop */}
         <nav className="nav">
-          {navItems.filter(n => n.label !== 'AI').map(n => (
+          {navItems.map(n => (
             <Link
               key={n.label}
               to={n.to}
@@ -67,17 +66,33 @@ export default function Navbar() {
           </button>
 
           {user ? (
-            <button className="plan-pill" onClick={signOut} title="Sign out">
-              <span className="avatar">{initials}</span>
-              <span style={{ textTransform: 'capitalize' }}>{plan}</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 11,
+                color: 'var(--ink-3)',
+                textTransform: 'capitalize',
+              }}>
+                {plan}
+              </span>
+              <button className="plan-pill" onClick={signOut} title="Sign out">
+                <span className="avatar">{initials}</span>
+              </button>
+            </div>
           ) : (
-            <button
-              className="btn btn-primary btn-sm"
-              onClick={() => setAuthModal('signup')}
-            >
-              Sign up free
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                className="btn btn-sm"
+                onClick={() => setAuthModal('signin')}
+              >
+                Sign in
+              </button>
+              <button
+                className="btn btn-primary btn-sm"
+                onClick={() => setAuthModal('signup')}
+              >
+                Sign up free
+              </button>
+            </div>
           )}
         </div>
       </header>
