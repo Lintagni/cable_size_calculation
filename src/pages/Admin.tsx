@@ -83,7 +83,7 @@ export default function Admin() {
   const [error, setError]         = useState<string | null>(null)
   const [promoting, setPromoting] = useState<string | null>(null)
 
-  const ADMIN_EMAILS = ['gweerasinghe67@gmail.com']
+  const ADMIN_EMAILS = ['gweerasinghe67@gmail.com', 'cryptopal95@gmail.com']
 
   useEffect(() => {
     if (!user) { navigate('/'); return }
