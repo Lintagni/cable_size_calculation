@@ -98,12 +98,12 @@ export default function Calculator() {
   const prevResultId = useRef<string | null>(null)
   useEffect(() => {
     if (!currentResult || !lvInputs) return
-    const key = `${currentResult.selectedCsa}-${lvInputs.designCurrent}-${lvInputs.cableLength}`
+    const key = `${currentResult.recommendedCsa}-${lvInputs.designCurrent}-${lvInputs.cableLength}`
     if (key === prevResultId.current) return
     prevResultId.current = key
     push({
       type: 'lv',
-      summary: `${currentResult.selectedCsa}mm² ${lvInputs.insulation ?? 'XLPE'} · ${lvInputs.designCurrent}A · Method ${lvInputs.referenceMethod ?? 'C'}`,
+      summary: `${currentResult.recommendedCsa}mm² ${lvInputs.insulation ?? 'XLPE'} · ${lvInputs.designCurrent}A · Method ${lvInputs.referenceMethod ?? 'C'}`,
       inputs: lvInputs as Record<string, unknown>,
       result: currentResult as unknown as Record<string, unknown>,
     })

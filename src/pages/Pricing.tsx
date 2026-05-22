@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { CheckCircle, X, Plus } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import { usePlanStore } from '../store/planStore'
 
 const PLANS = [

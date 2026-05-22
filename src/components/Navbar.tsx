@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Zap, Moon, Sun, Calculator, Sparkles, Clock, Tag, Home } from 'lucide-react'
+import { Moon, Sun, Calculator, Sparkles, Clock, Tag, Home } from 'lucide-react'
 import { useThemeStore } from '../store/themeStore'
 import { useAuthStore } from '../store/authStore'
 import { usePlanStore } from '../store/planStore'
