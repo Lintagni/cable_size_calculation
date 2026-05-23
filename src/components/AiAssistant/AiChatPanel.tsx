@@ -10,6 +10,7 @@ import type { AiModelId } from '../../store/aiModelStore'
 import type { LvCableResult } from '../../calculators/lvCableSizing'
 import MarkdownMessage from './MarkdownMessage'
 import BuyCreditsModal from './BuyCreditsModal'
+import CalcResultCard from './CalcResultCard'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAiChatStore } from '../../store/aiChatStore'
@@ -223,7 +224,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   const { modelId } = useAiModelStore()
 
   // Chat state lives in Zustand — survives navigation to Calculator and back
-  const { msgModels, setMsgModels, pendingFill, setPendingFill } = useAiChatStore()
+  const { msgModels, setMsgModels, calcResults, pendingFill, setPendingFill } = useAiChatStore()
 
   const quota     = PLAN_MONTHLY_QUOTA[plan]
   const remaining = getRemaining(record, plan)
@@ -457,38 +458,51 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
       <div className="flex-1 overflow-y-auto py-6" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <div style={{ width: '100%', maxWidth: 640, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 24 }}>
         {messages.map((msg, i) => (
-          <div key={i} className={clsx('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
-            {msg.role === 'assistant' && (
-              <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
-                <Sparkles className="w-3.5 h-3.5 text-white" />
+          <div key={i}>
+            {/* Message bubble row */}
+            <div className={clsx('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+              {msg.role === 'assistant' && (
+                <div className="w-7 h-7 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5 text-white" />
+                </div>
+              )}
+              <div className={clsx(
+                'max-w-[78%] rounded-2xl px-4 py-3 text-sm',
+                msg.role === 'user'
+                  ? 'bg-violet-600 text-white rounded-br-sm shadow-sm shadow-violet-900/30'
+                  : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-bl-sm shadow-sm',
+              )}>
+                {msg.role === 'user'
+                  ? msg.content
+                  : <>
+                      <MarkdownMessage
+                        content={msg.content.replace(/```json[\s\S]*?```/g, '').trim()}
+                        streaming={streaming && i === messages.length - 1}
+                      />
+                      {/* Model tag shown after streaming completes */}
+                      {(!streaming || i < messages.length - 1) && msgModels[i] && (
+                        <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-700/50 flex items-center gap-2">
+                          <ResponseModelTag modelId={msgModels[i]} />
+                          <span className="text-[9px] text-gray-400 dark:text-gray-600">BS7671 · NFC 33-209 · IEC 60439</span>
+                        </div>
+                      )}
+                    </>
+                }
               </div>
-            )}
-            <div className={clsx(
-              'max-w-[78%] rounded-2xl px-4 py-3 text-sm',
-              msg.role === 'user'
-                ? 'bg-violet-600 text-white rounded-br-sm shadow-sm shadow-violet-900/30'
-                : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-bl-sm shadow-sm',
-            )}>
-              {msg.role === 'user'
-                ? msg.content
-                : <>
-                    <MarkdownMessage
-                      content={msg.content.replace(/```json[\s\S]*?```/g, '').trim()}
-                      streaming={streaming && i === messages.length - 1}
-                    />
-                    {/* Model tag shown after streaming completes */}
-                    {(!streaming || i < messages.length - 1) && msgModels[i] && (
-                      <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-700/50 flex items-center gap-2">
-                        <ResponseModelTag modelId={msgModels[i]} />
-                        <span className="text-[9px] text-gray-400 dark:text-gray-600">BS7671 · NFC 33-209 · IEC 60439</span>
-                      </div>
-                    )}
-                  </>
-              }
+              {msg.role === 'user' && (
+                <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                  YOU
+                </div>
+              )}
             </div>
-            {msg.role === 'user' && (
-              <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold text-gray-500 dark:text-gray-400">
-                YOU
+
+            {/* Calc result card — shown below each assistant message that has a result */}
+            {msg.role === 'assistant' && calcResults[i] && (!streaming || i < messages.length - 1) && (
+              <div style={{ paddingLeft: 40 }}>
+                <CalcResultCard
+                  payload={calcResults[i]}
+                  onOpenInCalc={pendingFill ? () => { onFillAction(pendingFill); setPendingFill(null) } : undefined}
+                />
               </div>
             )}
           </div>
@@ -538,45 +552,6 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
       )}
 
       {showBuyModal && <BuyCreditsModal onClose={() => setShowBuyModal(false)} />}
-
-      {/* ── "Open in Calculator" banner — shown when AI parsed a circuit ── */}
-      {pendingFill && !streaming && (
-        <div style={{ flexShrink: 0, padding: '0 16px 6px', display: 'flex', justifyContent: 'center' }}>
-          <div style={{
-            width: '100%', maxWidth: 640,
-            background: 'color-mix(in oklch, var(--accent) 10%, var(--surface))',
-            border: '1px solid var(--accent-line)',
-            borderRadius: 'var(--r)', padding: '10px 14px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-          }}>
-            <span style={{ fontSize: 12, color: 'var(--ink-2)', fontWeight: 500 }}>
-              ✓ Calculator inputs ready — open the calculator to run the calculation
-            </span>
-            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-              <button
-                onClick={() => setPendingFill(null)}
-                style={{
-                  fontSize: 12, color: 'var(--ink-4)', background: 'none',
-                  border: 'none', cursor: 'pointer', padding: '4px 8px',
-                }}
-              >
-                Dismiss
-              </button>
-              <button
-                onClick={() => { onFillAction(pendingFill); setPendingFill(null) }}
-                style={{
-                  fontSize: 12, fontWeight: 700, padding: '6px 14px',
-                  background: 'var(--accent)', color: 'var(--accent-ink)',
-                  border: 'none', borderRadius: 'var(--r)', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 6,
-                }}
-              >
-                Open in Calculator →
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Input — model/credits/new-chat live inside the box */}
       <div style={{ flexShrink: 0, padding: '0 16px 16px', display: 'flex', justifyContent: 'center' }}>
