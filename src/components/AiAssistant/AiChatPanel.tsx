@@ -251,6 +251,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', height: '100%', padding: '0 24px 40px',
+        overflow: 'hidden',
       }}>
         {/* Eyebrow */}
         <div style={{
