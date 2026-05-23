@@ -8,15 +8,23 @@ export default function AiPage() {
   const navigate  = useNavigate()
   const setAction = usePendingActionStore(s => s.setAction)
 
-  // Prevent body from scrolling while on the AI page.
-  // The .ai-page class handles height: the topbar (60px desktop / 56px mobile)
-  // AND mobile nav clearance (76px) are subtracted via CSS so nothing overlaps.
+  // On mobile, the browser can scroll the page programmatically when the
+  // keyboard opens (to bring the focused textarea into view).  When the
+  // keyboard closes the browser does NOT always restore scroll, leaving the
+  // layout "stuck" shifted up.  We listen to visualViewport resize events:
+  // when the viewport grows back to full height (keyboard dismissed) we
+  // reset the scroll to 0 so the layout snaps back.
   useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = prev
+    const vvp = window.visualViewport
+    if (!vvp) return
+    const onResize = () => {
+      // keyboard closed = viewport height ≈ window.innerHeight
+      if (vvp.height > window.innerHeight * 0.75) {
+        window.scrollTo(0, 0)
+      }
     }
+    vvp.addEventListener('resize', onResize)
+    return () => vvp.removeEventListener('resize', onResize)
   }, [])
 
   function handleFillAction(action: FillAction) {

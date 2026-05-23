@@ -97,19 +97,21 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* ── Mobile bottom nav ── */}
-      <nav className="mobile-nav">
-        {navItems.map(n => (
-          <Link
-            key={n.label}
-            to={n.to}
-            className={active === n.label ? 'active' : ''}
-          >
-            <n.Icon size={16} />
-            <span>{n.label}</span>
-          </Link>
-        ))}
-      </nav>
+      {/* ── Mobile bottom nav — hidden on admin pages ── */}
+      {!pathname.startsWith('/admin') && (
+        <nav className="mobile-nav">
+          {navItems.map(n => (
+            <Link
+              key={n.label}
+              to={n.to}
+              className={active === n.label ? 'active' : ''}
+            >
+              <n.Icon size={16} />
+              <span>{n.label}</span>
+            </Link>
+          ))}
+        </nav>
+      )}
 
       {authModal && (
         <AuthModal defaultTab={authModal} onClose={() => setAuthModal(null)} />

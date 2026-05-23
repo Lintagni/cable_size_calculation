@@ -625,6 +625,12 @@ export default function Admin() {
   const [deleting,   setDeleting]   = useState<string | null>(null)
   const [showAddUser,setShowAddUser] = useState(false)
 
+  // Mark body so CSS can strip mobile-nav padding on admin pages
+  useEffect(() => {
+    document.body.classList.add('admin-page')
+    return () => document.body.classList.remove('admin-page')
+  }, [])
+
   useEffect(() => {
     if (!initialised) return
     if (!user) { navigate('/'); return }
@@ -756,14 +762,14 @@ export default function Admin() {
         ) : (
           <>
             {/* Stat cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}>
+            <div className="admin-stats-grid">
               <StatCard label="Total Users"     value={total}           sub={`+${todaySignups} today`} />
               <StatCard label="Pro Users"       value={byPlan.pro}      sub={`${total > 0 ? ((byPlan.pro / total) * 100).toFixed(0) : 0}% of total`} color="var(--accent)" />
               <StatCard label="Business Users"  value={byPlan.business} sub="Top tier" color="var(--ok)" />
               <StatCard label="AI Credits Used" value={totalCredits.toLocaleString()} sub="All users combined" />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 28 }}>
+            <div className="admin-chart-row">
               <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r)', padding: '20px 24px' }}>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Plan Distribution</div>
                 <PlanBar plan="free"     count={byPlan.free}     total={total} />
@@ -785,7 +791,8 @@ export default function Admin() {
                 </button>
               </div>
 
-              {/* Table header */}
+              {/* Table — horizontally scrollable on mobile */}
+              <div className="admin-table-scroll">
               <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr 1fr 1fr 2fr 36px', borderBottom: '1px solid var(--line)' }}>
                 {['Email', 'Plan', 'AI Credits', 'Joined', 'Change Plan', ''].map(h => (
                   <div key={h} style={{ padding: '10px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{h}</div>
@@ -860,6 +867,7 @@ export default function Admin() {
                   </div>
                 )
               })}
+              </div>{/* end admin-table-scroll */}
             </div>
           </>
         )}

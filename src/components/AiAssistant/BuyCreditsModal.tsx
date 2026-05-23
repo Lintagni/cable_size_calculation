@@ -76,7 +76,9 @@ export default function BuyCreditsModal({ onClose }: Props) {
       <div style={{
         position: 'relative', width: '100%', maxWidth: 480,
         background: 'var(--surface)', border: '1px solid var(--line)',
-        borderRadius: 16, boxShadow: '0 24px 60px rgba(0,0,0,0.4)', overflow: 'hidden',
+        borderRadius: 16, boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
+        display: 'flex', flexDirection: 'column',
+        maxHeight: 'calc(100dvh - 32px)', overflow: 'hidden',
       }}>
 
         {/* Header */}
@@ -110,8 +112,8 @@ export default function BuyCreditsModal({ onClose }: Props) {
           </button>
         </div>
 
-        {/* Body */}
-        <div style={{ padding: '20px 24px' }}>
+        {/* Body — scrollable so footer button is always reachable */}
+        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: '1 1 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--ink-4)', fontFamily: 'var(--font-mono)', marginBottom: 4 }}>
             <span style={{ textTransform: 'capitalize' }}>{plan} plan</span>
             <span>Haiku=1cr · Sonnet=2cr · Opus=5cr</span>
@@ -187,8 +189,8 @@ export default function BuyCreditsModal({ onClose }: Props) {
           )}
         </div>
 
-        {/* Footer */}
-        <div style={{ padding: '0 24px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {/* Footer — pinned at bottom, never clipped */}
+        <div style={{ padding: '0 24px 24px', display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
           {checkoutError && (
             <div style={{
               display: 'flex', alignItems: 'flex-start', gap: 8, padding: '10px 12px',
