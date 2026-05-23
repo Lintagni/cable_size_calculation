@@ -2,20 +2,32 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 export type AiModelId =
+  | 'auto'
   | 'claude-opus-4-5'
   | 'claude-sonnet-4-6'
   | 'claude-haiku-4-5'
 
+/** Real Claude model IDs (excludes 'auto' sentinel) */
+export type RealModelId = Exclude<AiModelId, 'auto'>
+
 export interface AiModel {
-  id: AiModelId
-  label: string
-  sublabel: string
+  id:          AiModelId
+  label:       string
+  sublabel:    string
   description: string
-  color: string        // Tailwind text colour class
-  badge: string        // Tailwind bg+text badge classes
+  color:       string   // Tailwind text colour class
+  badge:       string   // Tailwind bg+text badge classes
 }
 
 export const AI_MODELS: AiModel[] = [
+  {
+    id:          'auto',
+    label:       'Auto',
+    sublabel:    'Smart routing',
+    description: 'Automatically picks the best model based on query complexity. Simple Q&A uses Haiku, sizing uses Sonnet, complex analysis uses Opus.',
+    color:       'text-emerald-600 dark:text-emerald-400',
+    badge:       'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400',
+  },
   {
     id:          'claude-opus-4-5',
     label:       'Opus',
@@ -43,14 +55,14 @@ export const AI_MODELS: AiModel[] = [
 ]
 
 interface AiModelStore {
-  modelId: AiModelId
+  modelId:  AiModelId
   setModel: (id: AiModelId) => void
 }
 
 export const useAiModelStore = create<AiModelStore>()(
   persist(
     (set) => ({
-      modelId: 'claude-sonnet-4-6',
+      modelId:  'auto',           // default to auto-routing
       setModel: (modelId) => set({ modelId }),
     }),
     { name: 'cablecalc-ai-model' },

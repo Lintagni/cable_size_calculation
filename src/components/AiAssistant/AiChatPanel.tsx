@@ -1,12 +1,12 @@
-import { useState, useRef, useEffect } from 'react'
-import { Sparkles, Send, RotateCcw, ArrowUpRight, ChevronDown, Check } from 'lucide-react'
+import { useState, useRef, useEffect, useMemo } from 'react'
+import { Sparkles, Send, RotateCcw, ArrowUpRight, ChevronDown, Check, Zap } from 'lucide-react'
 import clsx from 'clsx'
 import { useAiChat } from '../../lib/useAiChat'
 import type { FillAction } from '../../lib/claude'
 import { usePlanStore } from '../../store/planStore'
 import { useAiQuotaStore, getRemaining, canAfford, PLAN_MONTHLY_QUOTA, MODEL_CREDIT_WEIGHT } from '../../store/aiQuotaStore'
 import { useAiModelStore, AI_MODELS } from '../../store/aiModelStore'
-import type { AiModelId } from '../../store/aiModelStore'
+import type { AiModelId, RealModelId } from '../../store/aiModelStore'
 import type { LvCableResult } from '../../calculators/lvCableSizing'
 import MarkdownMessage from './MarkdownMessage'
 import BuyCreditsModal from './BuyCreditsModal'
@@ -14,6 +14,7 @@ import CalcResultCard from './CalcResultCard'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAiChatStore } from '../../store/aiChatStore'
+import { routeQuery } from '../../lib/complexityRouter'
 
 interface Props {
   currentResult: LvCableResult | null
@@ -46,6 +47,7 @@ const SUGGESTIONS_FULL = [
 ]
 
 const MODEL_DOT: Record<AiModelId, string> = {
+  'auto':              'bg-emerald-400',
   'claude-opus-4-5':   'bg-amber-400',
   'claude-sonnet-4-6': 'bg-violet-400',
   'claude-haiku-4-5':  'bg-sky-400',
@@ -228,28 +230,59 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
 
   const quota     = PLAN_MONTHLY_QUOTA[plan]
   const remaining = getRemaining(record, plan)
-  const canQuery  = canAfford(record, plan, modelId)
 
-  const [prompt, setPrompt]         = useState('')
+  const [prompt, setPrompt]             = useState('')
   const [showBuyModal, setShowBuyModal] = useState(false)
-  const messagesEndRef              = useRef<HTMLDivElement>(null)
-  const textareaRef                 = useRef<HTMLTextAreaElement>(null)
+  const messagesEndRef                  = useRef<HTMLDivElement>(null)
+  const textareaRef                     = useRef<HTMLTextAreaElement>(null)
 
   const { messages, streaming, error, send, reset } = useAiChat(currentResult)
   const hasMessages = messages.length > 0
+
+  // ── Live routing estimate (updates as user types) ──────────────────────────
+  const routeEstimate = useMemo(() => {
+    if (!prompt.trim()) return null
+    if (modelId !== 'auto') return null
+    return routeQuery(prompt)
+  }, [prompt, modelId])
+
+  // Effective credit cost for the current message
+  const effectiveCreditCost = routeEstimate
+    ? routeEstimate.creditCost
+    : MODEL_CREDIT_WEIGHT[modelId] ?? 2
+
+  // Can the user afford this message?
+  const canQuery = remaining >= effectiveCreditCost || remaining >= 1
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   async function handleSubmit() {
-    if (!prompt.trim() || streaming || !canQuery) return
+    if (!prompt.trim() || streaming) return
 
-    // 1. Deduct locally (instant UI feedback)
-    consume(modelId, plan)
+    const text = prompt.trim()
 
-    // 2. Persist updated credits to DB so loadProfile() sees the correct value
-    //    after refresh. Fire-and-forget — don't block the send.
+    // ── 1. Determine effective model ─────────────────────────────────────────
+    let effectiveModel: RealModelId
+    if (modelId === 'auto') {
+      effectiveModel = routeQuery(text).modelId
+    } else {
+      effectiveModel = modelId as RealModelId
+    }
+
+    // ── 2. Affordability check — fall back to cheaper model if needed ─────────
+    if (!canAfford(record, plan, effectiveModel)) {
+      const fallbacks: RealModelId[] = ['claude-sonnet-4-6', 'claude-haiku-4-5']
+      const affordable = fallbacks.find(m => canAfford(record, plan, m))
+      if (!affordable) return   // truly out of credits
+      effectiveModel = affordable
+    }
+
+    // ── 3. Consume credits immediately (UI feedback) ──────────────────────────
+    consume(effectiveModel, plan)
+
+    // ── 4. Sync updated credits to DB (fire-and-forget) ──────────────────────
     void (async () => {
       try {
         const { record } = useAiQuotaStore.getState()
@@ -265,14 +298,13 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
       }
     })()
 
-    const text = prompt.trim()
+    // ── 5. Send ───────────────────────────────────────────────────────────────
     const assistantIdx = messages.length + 1
     setPrompt('')
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
-    setMsgModels(prev => ({ ...prev, [assistantIdx]: modelId }))
+    setMsgModels(prev => ({ ...prev, [assistantIdx]: effectiveModel }))
 
-    // send() now stores fillAction in aiChatStore.pendingFill — no auto-navigate
-    await send(text)
+    await send(text, effectiveModel)
   }
 
   function handleKey(e: React.KeyboardEvent) {
@@ -324,7 +356,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
                 fontFamily: 'var(--font-mono)', fontSize: 12,
                 color: !canQuery ? 'var(--fail)' : remaining <= quota * 0.2 ? '#f59e0b' : 'var(--ink-3)',
               }}>
-                {remaining}/{quota} credits
+                {remaining}/{quota} cr {modelId === 'auto' ? '· Auto routing' : `· ${MODEL_CREDIT_WEIGHT[modelId]}cr/msg`}
               </span>
               <button
                 onClick={() => setShowBuyModal(true)}
@@ -573,10 +605,15 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
                 color: !canQuery ? 'var(--fail)' : remaining <= (quota ?? 0) * 0.2 ? '#f59e0b' : 'var(--ink-4)',
                 display: 'flex', alignItems: 'center', gap: 5,
               }}>
-                <Sparkles size={10} style={{ color: 'var(--accent-ink)' }} />
+                {routeEstimate
+                  ? <Zap size={10} style={{ color: 'var(--ok)' }} />
+                  : <Sparkles size={10} style={{ color: 'var(--accent-ink)' }} />
+                }
                 {quota === -1
                   ? 'Unlimited'
-                  : <>{remaining}/{quota} cr · {MODEL_CREDIT_WEIGHT[modelId]}cr/msg</>
+                  : routeEstimate
+                    ? <>{remaining}/{quota} cr · <span style={{ color: 'var(--ok)' }}>Auto → {AI_MODELS.find(m => m.id === routeEstimate.modelId)?.label} · {routeEstimate.creditCost}cr</span></>
+                    : <>{remaining}/{quota} cr · {MODEL_CREDIT_WEIGHT[modelId]}cr/msg</>
                 }
               </span>
               <button

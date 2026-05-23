@@ -4,9 +4,12 @@ import type { FillAction } from './claude'
 import type { LvCableResult, LvCableInput } from '../calculators/lvCableSizing'
 import type { AbcInput } from '../calculators/abcCableSizing'
 import type { BusbarInput } from '../calculators/busbarSizing'
+import type { RealModelId } from '../store/aiModelStore'
 import { useAiModelStore } from '../store/aiModelStore'
 import { useAiChatStore } from '../store/aiChatStore'
 import type { CalcResultPayload } from '../store/aiChatStore'
+import { detectCalcType, extractQuickParams } from './complexityRouter'
+import { findSimilarExamples } from './exampleRetrieval'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -30,20 +33,16 @@ async function runCalculator(fillAction: FillAction): Promise<CalcResultPayload 
     if (fillAction.action === 'fill_form') {
       const { calculate } = await import('../calculators/lvCableSizing')
       const input: LvCableInput = { ...DEFAULT_LV, ...fillAction.inputs } as LvCableInput
-      const result: LvCableResult = calculate(input)
-      return { type: 'lv', result }
+      return { type: 'lv', result: calculate(input) }
     }
-
     if (fillAction.action === 'fill_abc') {
       const { calculateAbc } = await import('../calculators/abcCableSizing')
       const input: AbcInput = {
         designCurrent: 10, voltage: 400, cableLength: 100, isLighting: false,
         ...fillAction.inputs,
       } as AbcInput
-      const result = calculateAbc(input)
-      return { type: 'abc', result }
+      return { type: 'abc', result: calculateAbc(input) }
     }
-
     if (fillAction.action === 'fill_busbar') {
       const { calculateBusbar } = await import('../calculators/busbarSizing')
       const input: BusbarInput = {
@@ -53,8 +52,7 @@ async function runCalculator(fillAction: FillAction): Promise<CalcResultPayload 
         voltage: 400, frequency: 50,
         ...fillAction.inputs,
       } as BusbarInput
-      const result = calculateBusbar(input)
-      return { type: 'busbar', result }
+      return { type: 'busbar', result: calculateBusbar(input) }
     }
   } catch (e) {
     console.warn('runCalculator failed:', e)
@@ -69,23 +67,48 @@ export function useAiChat(currentResult: LvCableResult | null) {
   const [error, setError]         = useState<string | null>(null)
   const { modelId }               = useAiModelStore()
 
-  const send = useCallback(async (userMessage: string): Promise<{ fillAction: FillAction | null }> => {
+  /**
+   * Send a message.
+   * @param userMessage   The user's text
+   * @param effectiveModel  The already-routed real model to use (determined by caller)
+   */
+  const send = useCallback(async (
+    userMessage:   string,
+    effectiveModel: RealModelId,
+  ): Promise<{ fillAction: FillAction | null }> => {
+
     const userMsg: ChatMessage = { role: 'user', content: userMessage }
     const nextMessages = [...messages, userMsg]
     setMessages([...nextMessages, { role: 'assistant', content: '' }])
     setStreaming(true)
     setError(null)
 
-    const ctx    = buildResultContext(currentResult)
-    const system = ctx ? `${SYSTEM_PROMPT}\n\n---\n${ctx}` : SYSTEM_PROMPT
+    // ── 1. Retrieve similar past examples (non-blocking, best-effort) ─────────
+    const calcTypeHint = detectCalcType(userMessage)
+    const quickParams  = extractQuickParams(userMessage)
+    const examplesCtx  = await findSimilarExamples({
+      calcType:        calcTypeHint,
+      designCurrent:   quickParams.designCurrent,
+      cableLength:     quickParams.cableLength,
+      voltage:         quickParams.voltage,
+      referenceMethod: quickParams.referenceMethod,
+    })
+
+    // ── 2. Build system prompt with current calc result + examples ────────────
+    const resultCtx = buildResultContext(currentResult)
+    const system = [
+      SYSTEM_PROMPT,
+      examplesCtx,
+      resultCtx ? `\n\n---\n${resultCtx}` : '',
+    ].join('')
 
     let fullText = ''
     try {
       const stream = anthropic.messages.stream({
-        model: modelId,
+        model:      effectiveModel,
         max_tokens: 1024,
         system,
-        messages: nextMessages.map(m => ({ role: m.role, content: m.content })),
+        messages:   nextMessages.map(m => ({ role: m.role, content: m.content })),
       })
 
       for await (const chunk of stream) {
@@ -95,14 +118,12 @@ export function useAiChat(currentResult: LvCableResult | null) {
         }
       }
 
+      // ── 3. Run the calculator if AI parsed a circuit ──────────────────────
       const fillAction = parseExtractedInputs(fullText)
       if (fillAction) {
-        // Run the real calculator — result is attached to the assistant message
         const assistantMsgIdx = useAiChatStore.getState().messages.length - 1
         const payload = await runCalculator(fillAction)
         if (payload) setCalcResult(assistantMsgIdx, payload)
-
-        // Store as pending so user can optionally open Calculator for manual edits
         setPendingFill(fillAction)
       }
 

@@ -24,8 +24,10 @@ export const PLAN_MONTHLY_QUOTA: Record<string, number> = {
   business: 2000,
 }
 
-// Credit weight per model (reflects real API cost ratio)
+// Credit weight per model (reflects real API cost ratio).
+// 'auto' uses 2 as a display estimate; actual cost = routed model's weight.
 export const MODEL_CREDIT_WEIGHT: Record<AiModelId, number> = {
+  'auto':              2,   // display only — real cost determined by router
   'claude-haiku-4-5':  1,
   'claude-sonnet-4-6': 2,
   'claude-opus-4-5':   5,
