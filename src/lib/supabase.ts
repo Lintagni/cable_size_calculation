@@ -9,7 +9,14 @@ export type Profile = {
   credits_used: number
 }
 
+const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL  as string | undefined
+const supabaseAnon = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+
+if (!supabaseUrl || !supabaseAnon) {
+  console.warn('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY — auth will not work.')
+}
+
 export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL as string,
-  import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+  supabaseUrl  ?? 'https://placeholder.supabase.co',
+  supabaseAnon ?? 'placeholder-anon-key',
 )
