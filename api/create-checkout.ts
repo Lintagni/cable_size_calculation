@@ -1,7 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { PACK_CREDITS } from './_products'
+
+// Inlined to avoid cross-file ESM import issues on Node ≥ 22.
+// Override with PRODUCT_* env vars to switch to live-mode product IDs.
+const PACK_CREDITS: Record<string, number> = {
+  [process.env.PRODUCT_STARTER    ?? 'pdt_0NfKWwNlgLAUIRjgrInu5']: 25,
+  [process.env.PRODUCT_BOOST      ?? 'pdt_0NfKX4XJ839wZrSHM3Qkz']: 75,
+  [process.env.PRODUCT_STANDARD   ?? 'pdt_0NfKXATusDEKQbyrqGX15']: 200,
+  [process.env.PRODUCT_PRO_PACK   ?? 'pdt_0NfKXEVFKZn8BKSHFsJ1O']: 600,
+  [process.env.PRODUCT_STUDIO     ?? 'pdt_0NfKXI6kBSG4QsZCeZ3j3']: 1500,
+  [process.env.PRODUCT_ENTERPRISE ?? 'pdt_0NfKXNDghtiQ6Vn9trCKx']: 5000,
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  res.setHeader('Content-Type', 'application/json')
   // ── Top-level guard: any uncaught throw returns JSON, not Vercel's HTML error ──
   try {
     if (req.method !== 'POST') {

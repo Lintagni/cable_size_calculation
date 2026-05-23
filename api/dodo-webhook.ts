@@ -1,7 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import crypto from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import { PLAN_MAP } from './_products'
+
+// Inlined to avoid cross-file ESM import issues on Node ≥ 22.
+const PLAN_MAP: Record<string, 'pro' | 'business'> = {
+  [process.env.PRODUCT_PLAN_PRO      ?? 'pdt_0NfKXSIx1EMeoQ0buSGxU']: 'pro',
+  [process.env.PRODUCT_PLAN_BUSINESS ?? 'pdt_0NfKXWTQpI8bLIQHzwzE6']: 'business',
+}
 
 // Must disable body parsing so we get the raw body for signature verification
 export const config = {
