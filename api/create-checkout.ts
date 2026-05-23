@@ -13,9 +13,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Invalid product ID' })
   }
 
-  const siteUrl = process.env.SITE_URL || process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : 'http://localhost:5173'
+  // Fix operator-precedence: SITE_URL takes priority, then VERCEL_URL, else localhost
+  const siteUrl = process.env.SITE_URL
+    ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173')
 
   if (!process.env.DODO_SECRET_KEY) {
     console.error('create-checkout: DODO_SECRET_KEY env var is not set')
@@ -29,6 +29,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         Authorization: `Bearer ${process.env.DODO_SECRET_KEY}`,
         'Content-Type': 'application/json',
       },
+      // Abort if Dodo API doesn't respond within 9 s (Vercel hobby limit is 10 s)
+      signal: AbortSignal.timeout(9000),
       body: JSON.stringify({
         billing: { city: '', country: 'US', state: '', street: '', zipcode: '' },
         customer: { create_new_customer: true },
@@ -52,6 +54,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ checkoutUrl: data.payment_link, paymentId: data.payment_id })
   } catch (err) {
     console.error('create-checkout error:', err)
-    return res.status(500).json({ error: String(err) })
+    const msg = err instanceof Error && err.name === 'TimeoutError'
+      ? 'Payment gateway timed out — please try again.'
+      : String(err)
+    return res.status(500).json({ error: msg })
   }
 }

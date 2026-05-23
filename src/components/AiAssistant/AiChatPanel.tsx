@@ -48,7 +48,7 @@ const MODEL_DOT: Record<AiModelId, string> = {
   'claude-haiku-4-5':  'bg-sky-400',
 }
 
-// ── Model selector dropdown ────────────────────────────────────────────────────
+// ── Model selector dropdown (empty state) ─────────────────────────────────────
 function ModelDropdown() {
   const { modelId, setModel } = useAiModelStore()
   const [open, setOpen]       = useState(false)
@@ -64,49 +64,62 @@ function ModelDropdown() {
   }, [])
 
   return (
-    <div className="relative" ref={ref}>
+    <div style={{ position: 'relative' }} ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className={clsx(
-          'flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all',
-          'bg-gray-900 border-gray-700 hover:border-gray-500',
-          active.color,
-        )}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8, padding: '7px 14px',
+          borderRadius: 12, fontSize: 12, fontWeight: 500, cursor: 'pointer',
+          background: 'var(--surface)', border: '1px solid var(--line)',
+          color: 'var(--ink)', transition: 'border-color 0.15s',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--line-2)')}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
       >
         <span className={clsx('w-2 h-2 rounded-full flex-shrink-0', MODEL_DOT[modelId])} />
-        Claude {active.label}
-        <ChevronDown className={clsx('w-3.5 h-3.5 text-gray-400 transition-transform', open && 'rotate-180')} />
+        <span className={active.color} style={{ fontWeight: 600 }}>Claude {active.label}</span>
+        <ChevronDown size={13} style={{
+          color: 'var(--ink-3)',
+          transform: open ? 'rotate(180deg)' : 'none',
+          transition: 'transform 0.15s',
+        }} />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-2 z-50 w-64 rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl overflow-hidden">
-          <div className="px-3 pt-3 pb-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Select model</p>
+        <div style={{
+          position: 'absolute', left: 0, top: 'calc(100% + 8px)', zIndex: 50,
+          width: 264, borderRadius: 16, border: '1px solid var(--line)',
+          background: 'var(--surface)', boxShadow: 'var(--shadow-pop)', overflow: 'hidden',
+        }}>
+          <div style={{ padding: '10px 12px 4px' }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-4)', margin: 0 }}>Select model</p>
           </div>
           {AI_MODELS.map(m => (
             <button
               key={m.id}
               onClick={() => { setModel(m.id as AiModelId); setOpen(false) }}
-              className={clsx(
-                'w-full flex items-start gap-3 px-3 py-2.5 text-left transition-colors',
-                m.id === modelId ? 'bg-gray-800' : 'hover:bg-gray-800/60',
-              )}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'flex-start', gap: 12,
+                padding: '10px 12px', textAlign: 'left', cursor: 'pointer',
+                background: m.id === modelId ? 'var(--surface-2)' : 'transparent',
+                border: 'none',
+              }}
+              onMouseEnter={e => { if (m.id !== modelId) e.currentTarget.style.background = 'var(--surface-2)' }}
+              onMouseLeave={e => { if (m.id !== modelId) e.currentTarget.style.background = 'transparent' }}
             >
-              <span className={clsx('w-2 h-2 rounded-full flex-shrink-0 mt-1.5', MODEL_DOT[m.id as AiModelId])} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className={clsx('text-sm font-semibold', m.color)}>
-                    Claude {m.label}
-                  </span>
-                  <span className="text-[10px] text-gray-500 flex-shrink-0">{m.sublabel}</span>
+              <span className={clsx('w-2 h-2 rounded-full flex-shrink-0', MODEL_DOT[m.id as AiModelId])} style={{ marginTop: 5 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 2 }}>
+                  <span className={m.color} style={{ fontSize: 13, fontWeight: 600 }}>Claude {m.label}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', flexShrink: 0 }}>{m.sublabel}</span>
                 </div>
-                <p className="text-[11px] text-gray-400 leading-tight mt-0.5">{m.description}</p>
+                <p style={{ fontSize: 11, color: 'var(--ink-3)', lineHeight: 1.4, margin: 0 }}>{m.description}</p>
               </div>
-              {m.id === modelId && <Check className="w-3.5 h-3.5 text-violet-400 flex-shrink-0 mt-1" />}
+              {m.id === modelId && <Check size={13} style={{ color: 'var(--accent-ink)', flexShrink: 0, marginTop: 4 }} />}
             </button>
           ))}
-          <div className="px-3 py-2 border-t border-gray-800">
-            <p className="text-[10px] text-gray-600">Powered by Anthropic · selection saved</p>
+          <div style={{ padding: '8px 12px', borderTop: '1px solid var(--line)' }}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', margin: 0 }}>Powered by Anthropic · selection saved</p>
           </div>
         </div>
       )}
@@ -114,7 +127,7 @@ function ModelDropdown() {
   )
 }
 
-// ── Compact pill for chat toolbar ─────────────────────────────────────────────
+// ── Compact pill for chat input toolbar ───────────────────────────────────────
 function ModelBadgePill() {
   const { modelId, setModel } = useAiModelStore()
   const [open, setOpen]       = useState(false)
@@ -130,39 +143,55 @@ function ModelBadgePill() {
   }, [])
 
   return (
-    <div className="relative" ref={ref}>
+    <div style={{ position: 'relative' }} ref={ref}>
       <button
         onClick={() => setOpen(o => !o)}
-        className={clsx(
-          'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-all',
-          'border-gray-700 dark:border-gray-700 bg-gray-800 dark:bg-gray-800',
-          active.color,
-        )}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px',
+          borderRadius: 8, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+          background: 'var(--surface-2)', border: '1px solid var(--line)',
+          transition: 'border-color 0.15s',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--line-2)')}
+        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
       >
         <span className={clsx('w-1.5 h-1.5 rounded-full', MODEL_DOT[modelId])} />
-        {active.label}
-        <ChevronDown className={clsx('w-3 h-3 text-gray-400 transition-transform', open && 'rotate-180')} />
+        <span className={active.color}>{active.label}</span>
+        <ChevronDown size={11} style={{
+          color: 'var(--ink-3)',
+          transform: open ? 'rotate(180deg)' : 'none',
+          transition: 'transform 0.15s',
+        }} />
       </button>
 
+      {/* Dropdown opens UPWARD — input box is at the bottom of the screen */}
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 w-60 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl overflow-hidden">
+        <div style={{
+          position: 'absolute', left: 0, bottom: 'calc(100% + 6px)', zIndex: 50,
+          width: 220, borderRadius: 12, border: '1px solid var(--line)',
+          background: 'var(--surface)', boxShadow: 'var(--shadow-pop)', overflow: 'hidden',
+        }}>
           {AI_MODELS.map(m => (
             <button
               key={m.id}
               onClick={() => { setModel(m.id as AiModelId); setOpen(false) }}
-              className={clsx(
-                'w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors',
-                m.id === modelId ? 'bg-gray-50 dark:bg-gray-700/60' : 'hover:bg-gray-50 dark:hover:bg-gray-700/40',
-              )}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 12px', textAlign: 'left', cursor: 'pointer',
+                background: m.id === modelId ? 'var(--surface-2)' : 'transparent',
+                border: 'none',
+              }}
+              onMouseEnter={e => { if (m.id !== modelId) e.currentTarget.style.background = 'var(--surface-2)' }}
+              onMouseLeave={e => { if (m.id !== modelId) e.currentTarget.style.background = 'transparent' }}
             >
               <span className={clsx('w-2 h-2 rounded-full flex-shrink-0', MODEL_DOT[m.id as AiModelId])} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className={clsx('text-xs font-semibold', m.color)}>{m.label}</span>
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500">{m.sublabel}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span className={m.color} style={{ fontSize: 12, fontWeight: 600 }}>{m.label}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)' }}>{m.sublabel}</span>
                 </div>
               </div>
-              {m.id === modelId && <Check className="w-3 h-3 text-violet-400 flex-shrink-0" />}
+              {m.id === modelId && <Check size={11} style={{ color: 'var(--accent-ink)', flexShrink: 0 }} />}
             </button>
           ))}
         </div>
@@ -251,7 +280,6 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', height: '100%', padding: '0 24px 40px',
-        overflow: 'hidden',
       }}>
         {/* Eyebrow */}
         <div style={{
@@ -505,7 +533,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
         <div style={{ width: '100%', maxWidth: 640 }}>
           <div style={{
             background: 'var(--surface)', border: '1px solid var(--line)',
-            borderRadius: 'var(--r-lg)', overflow: 'hidden',
+            borderRadius: 'var(--r-lg)',
             opacity: canQuery ? 1 : 0.8,
             boxShadow: '0 4px 24px oklch(0% 0 0 / 0.12)',
           }}>
@@ -523,7 +551,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
                 <Sparkles size={10} style={{ color: 'var(--accent-ink)' }} />
                 {quota === -1
                   ? 'Unlimited'
-                  : <>{remaining}/{quota} · {MODEL_CREDIT_WEIGHT[modelId]}/call</>
+                  : <>{remaining}/{quota} cr · {MODEL_CREDIT_WEIGHT[modelId]}cr/msg</>
                 }
               </span>
               {appliedLabel && (

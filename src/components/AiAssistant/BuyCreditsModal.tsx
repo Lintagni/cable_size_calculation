@@ -48,7 +48,16 @@ export default function BuyCreditsModal({ onClose }: Props) {
         body:    JSON.stringify({ productId, userId: user?.id ?? null }),
       })
       if (res.status === 404) throw new Error('Payment service not available on local dev.')
-      const data = await res.json() as { checkoutUrl?: string; error?: string }
+
+      // Parse response defensively — Vercel may return HTML on infrastructure errors
+      const text = await res.text()
+      let data: { checkoutUrl?: string; error?: string }
+      try {
+        data = JSON.parse(text) as { checkoutUrl?: string; error?: string }
+      } catch {
+        throw new Error(`Server error (${res.status}): ${text.slice(0, 120)}`)
+      }
+
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl
       } else {
