@@ -444,7 +444,8 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+      <div className="flex-1 overflow-y-auto py-6" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ width: '100%', maxWidth: 640, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 24 }}>
         {messages.map((msg, i) => (
           <div key={i} className={clsx('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
             {msg.role === 'assistant' && (
@@ -490,6 +491,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
         )}
         <div ref={messagesEndRef} />
       </div>
+      </div>
 
       {/* Quota exhausted banner */}
       {!canQuery && (
@@ -527,40 +529,46 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
 
       {showBuyModal && <BuyCreditsModal onClose={() => setShowBuyModal(false)} />}
 
-      {/* Input */}
-      <div className="flex-shrink-0 px-4 pb-4">
-        <div className={clsx(
-          'flex items-end gap-3 rounded-2xl border px-4 py-3 transition-all',
-          canQuery
-            ? 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 focus-within:border-violet-500 dark:focus-within:border-violet-600'
-            : 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800',
-        )}>
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            value={prompt}
-            onChange={e => { setPrompt(e.target.value); autoResize(e.target) }}
-            onKeyDown={handleKey}
-            disabled={streaming || !canQuery}
-            placeholder={canQuery ? 'Reply… (Enter to send, Shift+Enter for new line)' : 'Monthly quota reached'}
-            className="flex-1 bg-transparent text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-600 resize-none outline-none leading-relaxed"
-            style={{ minHeight: '24px' }}
-          />
-          <button
-            onClick={handleSubmit}
-            disabled={!prompt.trim() || streaming || !canQuery}
-            className={clsx(
-              'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all',
-              prompt.trim() && !streaming && canQuery
-                ? 'bg-violet-600 hover:bg-violet-500 shadow-md shadow-violet-900/40'
-                : 'bg-gray-200 dark:bg-gray-800 cursor-not-allowed',
-            )}
-          >
-            {streaming
-              ? <span className="flex gap-0.5">{[0,1,2].map(i => <span key={i} className="w-1 h-1 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />)}</span>
-              : <Send className={clsx('w-3.5 h-3.5', prompt.trim() && !streaming && canQuery ? 'text-white' : 'text-gray-500')} />
-            }
-          </button>
+      {/* Input — same centred 640px width as empty state */}
+      <div style={{ flexShrink: 0, padding: '8px 16px 16px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ width: '100%', maxWidth: 640 }}>
+          <div style={{
+            display: 'flex', alignItems: 'flex-end', gap: 10,
+            background: 'var(--surface)', border: '1px solid var(--line)',
+            borderRadius: 'var(--r-lg)', padding: '12px 14px',
+            opacity: canQuery ? 1 : 0.7,
+            boxShadow: '0 4px 24px oklch(0% 0 0 / 0.12)',
+          }}>
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              value={prompt}
+              onChange={e => { setPrompt(e.target.value); autoResize(e.target) }}
+              onKeyDown={handleKey}
+              disabled={streaming || !canQuery}
+              placeholder={canQuery ? 'Reply… (Enter to send, Shift+Enter for new line)' : 'Monthly quota reached'}
+              style={{
+                flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                fontSize: 14, color: 'var(--ink)', resize: 'none', lineHeight: 1.6,
+                minHeight: 24, maxHeight: 160, fontFamily: 'var(--font-sans)',
+              }}
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={!prompt.trim() || streaming || !canQuery}
+              style={{
+                width: 32, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer',
+                flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: prompt.trim() && canQuery ? 'var(--ink)' : 'var(--line)',
+                transition: 'background 0.15s',
+              }}
+            >
+              {streaming
+                ? <span style={{ display: 'flex', gap: 3 }}>{[0,1,2].map(i => <span key={i} style={{ width: 5, height: 5, background: 'var(--bg)', borderRadius: '50%', animation: 'bounce 1s ease infinite', animationDelay: `${i * 0.15}s` }} />)}</span>
+                : <Send size={13} style={{ color: prompt.trim() && canQuery ? 'var(--bg)' : 'var(--ink-4)' }} />
+              }
+            </button>
+          </div>
         </div>
       </div>
     </div>
