@@ -9,16 +9,13 @@ export default function AiPage() {
   const setAction = usePendingActionStore(s => s.setAction)
 
   // Prevent body from scrolling while on the AI page.
-  // The topbar is sticky (60px desktop / 56px mobile) and the mobile nav
-  // adds padding-bottom: 76px — both cause the body to overflow without this.
+  // The .ai-page class handles height: the topbar (60px desktop / 56px mobile)
+  // AND mobile nav clearance (76px) are subtracted via CSS so nothing overlaps.
   useEffect(() => {
     const prev = document.body.style.overflow
-    const prevPad = document.body.style.paddingBottom
     document.body.style.overflow = 'hidden'
-    document.body.style.paddingBottom = '0'
     return () => {
       document.body.style.overflow = prev
-      document.body.style.paddingBottom = prevPad
     }
   }, [])
 
@@ -28,8 +25,7 @@ export default function AiPage() {
   }
 
   return (
-    // 60px = desktop topbar height (56px on mobile — the 4px gap is fine)
-    <div style={{ height: 'calc(100vh - 60px)', overflow: 'hidden' }}>
+    <div className="ai-page">
       <AiChatPanel currentResult={null} onFillAction={handleFillAction} />
     </div>
   )

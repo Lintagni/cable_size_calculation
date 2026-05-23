@@ -326,13 +326,14 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', height: '100%', padding: '0 24px 40px',
+        justifyContent: 'center', height: '100%', padding: '0 16px 32px',
+        overflowY: 'auto',
       }}>
         {/* Eyebrow */}
         <div style={{
           fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em',
           textTransform: 'uppercase', color: 'var(--ink-4)',
-          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24,
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
         }}>
           <span style={{ width: 24, height: 1, background: 'var(--ink-4)', display: 'inline-block' }} />
           AI Assistant · Beta
@@ -340,7 +341,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
         </div>
 
         {/* Greeting */}
-        <h1 style={{ fontSize: 64, fontWeight: 800, color: 'var(--ink)', marginBottom: 10, textAlign: 'center', lineHeight: 1.05 }}>
+        <h1 style={{ fontSize: 'clamp(26px, 7vw, 60px)', fontWeight: 800, color: 'var(--ink)', marginBottom: 10, textAlign: 'center', lineHeight: 1.05 }}>
           {greeting()}, Engineer.
         </h1>
         <p style={{ color: 'var(--ink-3)', marginBottom: 32, textAlign: 'center', fontSize: 15, maxWidth: 480 }}>
@@ -437,7 +438,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
               Shuffle
             </button>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
             {visibleSuggestions.map((s, i) => (
               <button
                 key={s.text}

@@ -969,6 +969,24 @@ html, body {
 .faq-a { margin-top: 10px; font-size: 13px; color: var(--ink-2); line-height: 1.5; text-align: left; }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   AI PAGE — full-height layout
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* dvh = dynamic viewport height (shrinks when mobile address bar shows) */
+.ai-page {
+  height: calc(100vh - 60px);
+  height: calc(100dvh - 60px);
+  overflow: hidden;
+}
+@media (max-width: 720px) {
+  .ai-page {
+    /* 56px topbar + 76px body padding (mobile nav clearance) */
+    height: calc(100vh  - 56px - 76px);
+    height: calc(100dvh - 56px - 76px);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    MOBILE BOTTOM NAV
    ═══════════════════════════════════════════════════════════════════════ */
 
