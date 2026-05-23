@@ -34,7 +34,7 @@ function ProtectedShell({ children }: { children: React.ReactNode }) {
 
 function FeedbackGate() {
   const { pathname } = useLocation()
-  if (pathname.startsWith('/admin')) return null
+  if (pathname.startsWith('/admin') || pathname === '/ai') return null
   return <FeedbackWidget />
 }
 

@@ -235,6 +235,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   const [showBuyModal, setShowBuyModal] = useState(false)
   const messagesEndRef                  = useRef<HTMLDivElement>(null)
   const textareaRef                     = useRef<HTMLTextAreaElement>(null)
+  const prevMsgCountRef                 = useRef(0)
 
   const { messages, streaming, error, send, reset } = useAiChat(currentResult)
   const hasMessages = messages.length > 0
@@ -255,7 +256,10 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   const canQuery = remaining >= effectiveCreditCost || remaining >= 1
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const isNewMessage = messages.length > prevMsgCountRef.current
+    prevMsgCountRef.current = messages.length
+    // Smooth scroll for new messages; instant during streaming to avoid flicker
+    messagesEndRef.current?.scrollIntoView({ behavior: isNewMessage ? 'smooth' : 'instant' })
   }, [messages])
 
   async function handleSubmit() {
@@ -489,7 +493,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto py-6" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ width: '100%', maxWidth: 640, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div style={{ width: '100%', maxWidth: 640, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 24, marginTop: 'auto' }}>
         {messages.map((msg, i) => (
           <div key={i}>
             {/* Message bubble row */}

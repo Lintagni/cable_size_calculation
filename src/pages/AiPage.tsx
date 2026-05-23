@@ -8,23 +8,23 @@ export default function AiPage() {
   const navigate  = useNavigate()
   const setAction = usePendingActionStore(s => s.setAction)
 
-  // On mobile, the browser can scroll the page programmatically when the
-  // keyboard opens (to bring the focused textarea into view).  When the
-  // keyboard closes the browser does NOT always restore scroll, leaving the
-  // layout "stuck" shifted up.  We listen to visualViewport resize events:
-  // when the viewport grows back to full height (keyboard dismissed) we
-  // reset the scroll to 0 so the layout snaps back.
+  // On mobile, the browser scrolls the <body> when the keyboard opens to try
+  // to bring the focused textarea into view.  That shifts .ai-page (which is
+  // in normal flow) upward, making the input bar disappear behind the keyboard.
+  // Locking overflow on <html> and <body> prevents that scroll entirely;
+  // 100dvh in the CSS handles the keyboard height change natively.
   useEffect(() => {
-    const vvp = window.visualViewport
-    if (!vvp) return
-    const onResize = () => {
-      // keyboard closed = viewport height ≈ window.innerHeight
-      if (vvp.height > window.innerHeight * 0.75) {
-        window.scrollTo(0, 0)
-      }
+    const html = document.documentElement
+    const body = document.body
+    const prevHtml = html.style.overflow
+    const prevBody = body.style.overflow
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+    window.scrollTo(0, 0)
+    return () => {
+      html.style.overflow = prevHtml
+      body.style.overflow = prevBody
     }
-    vvp.addEventListener('resize', onResize)
-    return () => vvp.removeEventListener('resize', onResize)
   }, [])
 
   function handleFillAction(action: FillAction) {

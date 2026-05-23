@@ -6,34 +6,32 @@ import { useAuthStore } from '../store/authStore'
 type Category = 'rate' | 'error' | 'bug' | 'calculation' | 'feature'
 
 const CATEGORIES: { id: Category; label: string; emoji: string; placeholder: string }[] = [
-  { id: 'rate',        label: 'Rate App',           emoji: '⭐', placeholder: '' },
-  { id: 'error',       label: 'Error',              emoji: '⚠️', placeholder: 'Describe the error you encountered…' },
-  { id: 'bug',         label: 'Bug',                emoji: '🐛', placeholder: 'What did you do, and what went wrong?' },
-  { id: 'calculation', label: 'Calculation Error',  emoji: '🧮', placeholder: 'Which calculation and what result seemed wrong?' },
-  { id: 'feature',     label: 'New Feature',        emoji: '💡', placeholder: 'Describe the feature you would like to see…' },
+  { id: 'rate',        label: 'Rate App',          emoji: '⭐', placeholder: '' },
+  { id: 'error',       label: 'Error',             emoji: '⚠️', placeholder: 'Describe the error you encountered…' },
+  { id: 'bug',         label: 'Bug',               emoji: '🐛', placeholder: 'What did you do, and what went wrong?' },
+  { id: 'calculation', label: 'Calc Error',        emoji: '🧮', placeholder: 'Which calculation and what result seemed wrong?' },
+  { id: 'feature',     label: 'New Feature',       emoji: '💡', placeholder: 'Describe the feature you would like to see…' },
 ]
 
 export default function FeedbackWidget() {
   const { user } = useAuthStore()
-  const [open,     setOpen]     = useState(false)
-  const [category, setCategory] = useState<Category>('rate')
-  const [rating,   setRating]   = useState(0)
-  const [hover,    setHover]    = useState(0)
-  const [message,  setMessage]  = useState('')
-  const [sending,  setSending]  = useState(false)
-  const [done,     setDone]     = useState(false)
+  const [open,    setOpen]    = useState(false)
+  const [category,setCategory]= useState<Category>('rate')
+  const [rating,  setRating]  = useState(0)
+  const [hover,   setHover]   = useState(0)
+  const [message, setMessage] = useState('')
+  const [sending, setSending] = useState(false)
+  const [done,    setDone]    = useState(false)
 
   function reset() {
     setCategory('rate'); setRating(0); setHover(0); setMessage(''); setDone(false)
   }
-
-  function handleOpen() { reset(); setOpen(true) }
+  function handleOpen()  { reset(); setOpen(true) }
   function handleClose() { setOpen(false); setTimeout(reset, 300) }
 
   async function handleSubmit() {
     if (category === 'rate' && rating === 0) return
     if (category !== 'rate' && !message.trim()) return
-
     setSending(true)
     try {
       await supabase.from('feedback').insert({
@@ -46,18 +44,16 @@ export default function FeedbackWidget() {
       })
       setDone(true)
       setTimeout(handleClose, 1800)
-    } catch {
-      // silently swallow — feedback should never block the user
-    }
+    } catch { /* swallow */ }
     setSending(false)
   }
 
-  const cat = CATEGORIES.find(c => c.id === category)!
+  const cat       = CATEGORIES.find(c => c.id === category)!
   const canSubmit = category === 'rate' ? rating > 0 : message.trim().length > 0
 
   return (
     <>
-      {/* Floating trigger button */}
+      {/* FAB trigger */}
       <button
         onClick={handleOpen}
         title="Send feedback"
@@ -76,22 +72,15 @@ export default function FeedbackWidget() {
         <MessageSquarePlus size={20} />
       </button>
 
-      {/* Backdrop + panel */}
+      {/* Panel */}
       {open && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: 24 }}>
-          <div style={{ position: 'absolute', inset: 0 }} onClick={handleClose} />
+        <div className="feedback-overlay">
+          <div className="feedback-backdrop" onClick={handleClose} />
 
-          <div style={{
-            position: 'relative',
-            width: '100%', maxWidth: 480,
-            background: 'var(--surface)', border: '1px solid var(--line)',
-            borderRadius: 16, boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
-            overflow: 'hidden', display: 'flex', flexDirection: 'column',
-            animation: 'feedbackSlideUp 0.2s ease',
-          }}>
+          <div className="feedback-panel">
 
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--line)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>Send Feedback</div>
               <button onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-3)', display: 'grid', placeItems: 'center', padding: 4, borderRadius: 6 }}>
                 <X size={14} />
@@ -99,46 +88,34 @@ export default function FeedbackWidget() {
             </div>
 
             {done ? (
-              /* Success state */
               <div style={{ padding: '40px 24px', textAlign: 'center' }}>
                 <CheckCircle2 size={36} style={{ color: 'var(--ok)', marginBottom: 12 }} />
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>Thank you!</div>
                 <div style={{ fontSize: 13, color: 'var(--ink-3)' }}>Your feedback helps improve CableCalc.</div>
               </div>
             ) : (
-              /* Two-column layout */
-              <div style={{ display: 'flex', minHeight: 220 }}>
+              <div className="feedback-body">
 
-                {/* Left — category list */}
-                <div style={{ width: 160, flexShrink: 0, borderRight: '1px solid var(--line)', padding: '10px 0', background: 'var(--surface-2)' }}>
+                {/* ── Desktop: left sidebar ── Mobile: top pill row ── */}
+                <div className="feedback-categories">
                   {CATEGORIES.map(c => (
                     <button
                       key={c.id}
                       onClick={() => setCategory(c.id)}
-                      style={{
-                        width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-                        padding: '10px 16px', border: 'none', cursor: 'pointer',
-                        background: category === c.id ? 'var(--surface)' : 'transparent',
-                        color: category === c.id ? 'var(--ink)' : 'var(--ink-3)',
-                        fontSize: 13, fontWeight: category === c.id ? 600 : 400,
-                        borderLeft: `3px solid ${category === c.id ? 'var(--accent)' : 'transparent'}`,
-                        textAlign: 'left', transition: 'all 0.1s',
-                      }}
+                      className={`feedback-cat-btn${category === c.id ? ' active' : ''}`}
                     >
-                      <span style={{ fontSize: 15, lineHeight: 1 }}>{c.emoji}</span>
-                      {c.label}
+                      <span>{c.emoji}</span>
+                      <span>{c.label}</span>
                     </button>
                   ))}
                 </div>
 
-                {/* Right — input area */}
-                <div style={{ flex: 1, padding: '18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-
+                {/* ── Right / bottom: input area ── */}
+                <div className="feedback-input-area">
                   {category === 'rate' ? (
-                    /* Star rating */
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 12 }}>How would you rate CableCalc?</div>
-                      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+                      <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
                         {[1,2,3,4,5].map(n => (
                           <button
                             key={n}
@@ -156,7 +133,7 @@ export default function FeedbackWidget() {
                           </button>
                         ))}
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--ink-4)', marginBottom: 8 }}>
+                      <div style={{ fontSize: 12, color: 'var(--ink-4)', marginBottom: 10 }}>
                         {rating === 0 ? 'Select a rating' : ['','Poor','Fair','Good','Very good','Excellent'][rating]}
                       </div>
                       <textarea
@@ -173,7 +150,6 @@ export default function FeedbackWidget() {
                       />
                     </div>
                   ) : (
-                    /* Text feedback */
                     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 10 }}>
                         {cat.emoji} {cat.label}
@@ -182,7 +158,7 @@ export default function FeedbackWidget() {
                         value={message}
                         onChange={e => setMessage(e.target.value)}
                         placeholder={cat.placeholder}
-                        rows={5}
+                        className="feedback-textarea"
                         style={{
                           flex: 1, width: '100%', boxSizing: 'border-box', resize: 'none',
                           background: 'var(--surface-2)', border: '1px solid var(--line)',
@@ -193,17 +169,16 @@ export default function FeedbackWidget() {
                     </div>
                   )}
 
-                  {/* Submit */}
                   <button
                     onClick={handleSubmit}
                     disabled={!canSubmit || sending}
                     style={{
-                      width: '100%', padding: '10px', borderRadius: 8, border: 'none',
+                      width: '100%', padding: '11px', borderRadius: 8, border: 'none',
                       background: canSubmit ? 'var(--accent)' : 'var(--surface-2)',
                       color: canSubmit ? 'var(--accent-fg)' : 'var(--ink-4)',
                       fontSize: 13, fontWeight: 700, cursor: canSubmit ? 'pointer' : 'not-allowed',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                      transition: 'all 0.15s',
+                      transition: 'all 0.15s', flexShrink: 0,
                     }}
                   >
                     <Send size={13} />
