@@ -10,7 +10,7 @@ const CATEGORIES: { id: Category; label: string; emoji: string; placeholder: str
   { id: 'error',       label: 'Error',              emoji: '⚠️', placeholder: 'Describe the error you encountered…' },
   { id: 'bug',         label: 'Bug',                emoji: '🐛', placeholder: 'What did you do, and what went wrong?' },
   { id: 'calculation', label: 'Calculation Error',  emoji: '🧮', placeholder: 'Which calculation and what result seemed wrong?' },
-  { id: 'feature',     label: 'New Feature',        emoji: '💡', placeholder: 'Describe the feature you'd like to see…' },
+  { id: 'feature',     label: 'New Feature',        emoji: '💡', placeholder: 'Describe the feature you would like to see…' },
 ]
 
 export default function FeedbackWidget() {
@@ -62,7 +62,7 @@ export default function FeedbackWidget() {
         onClick={handleOpen}
         title="Send feedback"
         style={{
-          position: 'fixed', bottom: 24, right: 24, zIndex: 40,
+          position: 'fixed', bottom: 24, right: 24, zIndex: 100,
           width: 48, height: 48, borderRadius: '50%', border: 'none',
           background: 'var(--accent)', color: 'var(--accent-fg)',
           boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
