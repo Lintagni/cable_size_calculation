@@ -98,10 +98,8 @@ function AddUserModal({ onClose, onCreated, session }: {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session}` },
         body: JSON.stringify({ email, password, plan }),
       })
-      const data = await res.json() as { success?: boolean; error?: string; warning?: string }
+      const data = await res.json() as { success?: boolean; error?: string; detail?: unknown }
       if (!res.ok) throw new Error(data.error ?? 'Failed to create user')
-      // Small delay then refresh so the new row is visible
-      await new Promise(r => setTimeout(r, 600))
       onCreated()
       onClose()
     } catch (err) {
@@ -203,13 +201,17 @@ export default function Admin() {
 
   async function loadProfiles() {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, plan, credits_used, created_at')
-      .order('created_at', { ascending: false })
-      .limit(200)
-    if (error) { setError(error.message); setLoading(false); return }
-    setProfiles((data ?? []) as Profile[])
+    try {
+      // Use server-side endpoint (service role key) so RLS never blocks the read
+      const res = await fetch('/api/admin/list-users', {
+        headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
+      })
+      const json = await res.json() as { profiles?: Profile[]; error?: string }
+      if (!res.ok) throw new Error(json.error ?? 'Failed to load users')
+      setProfiles(json.profiles ?? [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    }
     setLoading(false)
   }
 

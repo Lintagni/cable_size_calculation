@@ -26,66 +26,61 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const { email, password, plan = 'free' } = req.body as {
-    email: string
-    password: string
-    plan: 'free' | 'pro' | 'business'
+    email: string; password: string; plan: 'free' | 'pro' | 'business'
   }
-
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' })
 
   try {
-    // 1. Create the auth user (auto-confirmed, no email verification)
+    // 1. Create auth user
     const { data, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
+      email, password, email_confirm: true,
     })
-
     if (createErr) return res.status(400).json({ error: createErr.message })
 
     const userId = data.user.id
+    const now    = new Date().toISOString()
 
-    // 2. Small delay — give any DB trigger time to create the profile row
-    await delay(500)
+    // 2. Wait briefly for any DB trigger to auto-create the profile row
+    await delay(800)
 
-    // 3. Try to UPDATE the existing profile row (if the trigger already created it)
-    const { data: updated, error: updateErr } = await supabaseAdmin
+    // 3. Upsert with all known columns — handles both "trigger ran" and "no trigger" cases
+    const { error: upsertErr } = await supabaseAdmin
       .from('profiles')
-      .update({ plan })
-      .eq('id', userId)
-      .select('id')
-
-    if (updateErr) {
-      console.warn('profile update error:', updateErr.message)
-    }
-
-    // 4. If no row was updated (trigger didn't create it), INSERT one manually
-    const rowExists = Array.isArray(updated) && updated.length > 0
-    if (!rowExists) {
-      const now = new Date().toISOString()
-      const { error: insertErr } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-          id: userId,
+      .upsert(
+        {
+          id:                userId,
           email,
           plan,
-          credits_used: 0,
+          credits_used:      0,
           credits_purchased: 0,
-          credits_period: now.slice(0, 7), // "YYYY-MM"
-          created_at: now,
-        })
+          credits_period:    now.slice(0, 7), // "YYYY-MM"
+          created_at:        now,
+        },
+        { onConflict: 'id', ignoreDuplicates: false },
+      )
 
-      if (insertErr) {
-        console.error('profile insert error:', insertErr.message)
-        // Auth user created but profile failed — still return success,
-        // the row will be created on first login via the trigger/auth flow
-        return res.status(200).json({ success: true, userId, warning: insertErr.message })
-      }
+    if (upsertErr) {
+      // Upsert failed — log full detail and return error so admin can see it
+      console.error('profile upsert error:', JSON.stringify(upsertErr))
+      return res.status(500).json({
+        error: `User created in Auth but profile failed: ${upsertErr.message}`,
+        detail: upsertErr,
+        userId,
+      })
     }
 
-    return res.status(200).json({ success: true, userId })
+    // 4. Confirm the row exists
+    const { data: check } = await supabaseAdmin
+      .from('profiles')
+      .select('id, plan')
+      .eq('id', userId)
+      .single()
+
+    console.log('create-user: profile confirmed:', JSON.stringify(check))
+    return res.status(200).json({ success: true, userId, profile: check })
+
   } catch (err) {
-    console.error('create-user error:', err)
+    console.error('create-user unexpected error:', err)
     return res.status(500).json({ error: String(err) })
   }
 }
