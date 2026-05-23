@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { RefreshCw, UserPlus, Trash2, X, Loader2, Upload, Database, ToggleLeft, ToggleRight, FileSpreadsheet, CheckCircle2, AlertCircle } from 'lucide-react'
+import { RefreshCw, UserPlus, Trash2, X, Loader2, Upload, Database, ToggleLeft, ToggleRight, FileSpreadsheet, CheckCircle2, AlertCircle, Star, MessageSquare } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import { fetchAllExamples, toggleExample, deleteExample } from '../lib/exampleRetrieval'
@@ -613,11 +613,144 @@ create policy "public_read" on public.calculation_examples for select using (ena
   )
 }
 
+// ── Feedback Tab ─────────────────────────────────────────────────────────────
+interface FeedbackRow {
+  id: string
+  created_at: string
+  category: string
+  rating: number | null
+  message: string | null
+  user_email: string | null
+  page: string | null
+}
+
+const CAT_LABELS: Record<string, string> = {
+  rate: '⭐ Rate', error: '⚠️ Error', bug: '🐛 Bug',
+  calculation: '🧮 Calc Error', feature: '💡 Feature',
+}
+const CAT_COLORS: Record<string, string> = {
+  rate: 'var(--accent-ink)', error: 'var(--fail)', bug: '#e07b00',
+  calculation: '#7c3aed', feature: 'var(--ok)',
+}
+
+function FeedbackTab() {
+  const [rows,    setRows]    = useState<FeedbackRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter,  setFilter]  = useState<string>('all')
+
+  useEffect(() => {
+    supabase
+      .from('feedback')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200)
+      .then(({ data }) => { setRows(data ?? []); setLoading(false) })
+  }, [])
+
+  const cats   = ['all', 'rate', 'error', 'bug', 'calculation', 'feature']
+  const counts = cats.reduce<Record<string, number>>((acc, c) => {
+    acc[c] = c === 'all' ? rows.length : rows.filter(r => r.category === c).length
+    return acc
+  }, {})
+  const filtered = filter === 'all' ? rows : rows.filter(r => r.category === filter)
+
+  const avgRating = (() => {
+    const rated = rows.filter(r => r.rating != null)
+    if (!rated.length) return null
+    return (rated.reduce((s, r) => s + (r.rating ?? 0), 0) / rated.length).toFixed(1)
+  })()
+
+  const tagStyle = (active: boolean): React.CSSProperties => ({
+    padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+    cursor: 'pointer', border: '1px solid',
+    background:  active ? 'var(--accent-soft)' : 'var(--surface-2)',
+    borderColor: active ? 'var(--accent-line)' : 'var(--line)',
+    color:       active ? 'var(--accent-ink)'  : 'var(--ink-3)',
+    transition: 'all 0.12s',
+  })
+
+  return (
+    <div>
+      {/* Summary row */}
+      <div className="admin-stats-grid" style={{ marginBottom: 24 }}>
+        <StatCard label="Total Feedback"  value={rows.length} />
+        <StatCard label="Avg Rating"      value={avgRating ?? '—'} sub="out of 5 stars" color="var(--accent)" />
+        <StatCard label="Bug Reports"     value={counts.bug ?? 0}  color="#e07b00" />
+        <StatCard label="Feature Requests"value={counts.feature ?? 0} color="var(--ok)" />
+      </div>
+
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
+        {/* Filter bar */}
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <MessageSquare size={14} style={{ color: 'var(--ink-3)' }} />
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginRight: 4 }}>
+            Filter
+          </span>
+          {cats.map(c => (
+            <button key={c} onClick={() => setFilter(c)} style={tagStyle(filter === c)}>
+              {c === 'all' ? `All (${counts.all})` : `${CAT_LABELS[c]} (${counts[c] ?? 0})`}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)', fontSize: 13 }}>Loading feedback…</div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: 48, textAlign: 'center' }}>
+            <MessageSquare size={32} style={{ color: 'var(--ink-4)', marginBottom: 12 }} />
+            <p style={{ fontSize: 14, color: 'var(--ink-3)', margin: 0 }}>No feedback in this category yet.</p>
+          </div>
+        ) : (
+          <div className="admin-table-scroll">
+            {/* Header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '130px 90px 60px 1fr 160px 100px', borderBottom: '1px solid var(--line)', background: 'var(--surface-2)' }}>
+              {['Date', 'Category', 'Rating', 'Message', 'User', 'Page'].map(h => (
+                <div key={h} style={{ padding: '10px 14px', fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-4)' }}>{h}</div>
+              ))}
+            </div>
+            {filtered.map(row => (
+              <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '130px 90px 60px 1fr 160px 100px', borderBottom: '1px solid var(--line)', alignItems: 'start' }}>
+                <div style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)' }}>
+                  {new Date(row.created_at).toLocaleDateString()}<br />
+                  <span style={{ fontSize: 10 }}>{new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div style={{ padding: '12px 14px' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: CAT_COLORS[row.category] ?? 'var(--ink)' }}>
+                    {CAT_LABELS[row.category] ?? row.category}
+                  </span>
+                </div>
+                <div style={{ padding: '12px 14px' }}>
+                  {row.rating != null ? (
+                    <div style={{ display: 'flex', gap: 2 }}>
+                      {[1,2,3,4,5].map(n => (
+                        <Star key={n} size={12} fill={n <= row.rating! ? '#f59e0b' : 'none'} style={{ color: n <= row.rating! ? '#f59e0b' : 'var(--line)' }} />
+                      ))}
+                    </div>
+                  ) : <span style={{ color: 'var(--ink-4)' }}>—</span>}
+                </div>
+                <div style={{ padding: '12px 14px', fontSize: 13, color: 'var(--ink)', lineHeight: 1.5 }}>
+                  {row.message ?? <span style={{ color: 'var(--ink-4)' }}>—</span>}
+                </div>
+                <div style={{ padding: '12px 14px', fontSize: 12, color: 'var(--ink-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {row.user_email ?? <span style={{ color: 'var(--ink-4)' }}>anonymous</span>}
+                </div>
+                <div style={{ padding: '12px 14px', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-4)' }}>
+                  {row.page ?? '—'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Admin() {
   const { user, session, initialised } = useAuthStore()
   const navigate = useNavigate()
-  const [tab,        setTab]        = useState<'dashboard' | 'knowledge'>('dashboard')
+  const [tab,        setTab]        = useState<'dashboard' | 'knowledge' | 'feedback'>('dashboard')
   const [profiles,   setProfiles]   = useState<Profile[]>([])
   const [loading,    setLoading]    = useState(true)
   const [error,      setError]      = useState<string | null>(null)
@@ -707,7 +840,7 @@ export default function Admin() {
               Admin
             </div>
             <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--ink)' }}>
-              {tab === 'dashboard' ? 'Dashboard' : 'Knowledge Base'}
+              {tab === 'dashboard' ? 'Dashboard' : tab === 'knowledge' ? 'Knowledge Base' : 'Feedback'}
             </h1>
           </div>
           {tab === 'dashboard' && (
@@ -727,6 +860,7 @@ export default function Admin() {
           {([
             { id: 'dashboard', label: 'Dashboard',      icon: '📊' },
             { id: 'knowledge', label: 'Knowledge Base', icon: '🧠' },
+            { id: 'feedback',  label: 'Feedback',       icon: '💬' },
           ] as const).map(t => (
             <button
               key={t.id}
@@ -747,6 +881,9 @@ export default function Admin() {
         {tab === 'knowledge' && (
           <KnowledgeBaseTab session={session?.access_token ?? ''} />
         )}
+
+        {/* Feedback tab */}
+        {tab === 'feedback' && <FeedbackTab />}
 
         {/* Dashboard tab */}
         {tab === 'dashboard' && (<>

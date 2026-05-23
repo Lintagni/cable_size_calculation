@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Landing from './pages/Landing'
 import Calculator from './pages/Calculator'
@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import Pricing from './pages/Pricing'
 import Admin from './pages/Admin'
 import PaymentSuccess from './pages/PaymentSuccess'
+import FeedbackWidget from './components/FeedbackWidget'
 import { supabase } from './lib/supabase'
 import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -29,6 +30,12 @@ function ProtectedShell({ children }: { children: React.ReactNode }) {
       {children}
     </ProtectedRoute>
   )
+}
+
+function FeedbackGate() {
+  const { pathname } = useLocation()
+  if (pathname.startsWith('/admin')) return null
+  return <FeedbackWidget />
 }
 
 export default function App() {
@@ -67,5 +74,6 @@ export default function App() {
       {/* Misc */}
       <Route path="/payment-success" element={<PaymentSuccess />} />
     </Routes>
+    <FeedbackGate />
   )
 }
