@@ -1100,6 +1100,7 @@ html, body {
   .container        { padding: 0 18px; }
   .mobile-nav       { display: flex; }
   body              { padding-bottom: 76px; }
+  .feedback-fab     { bottom: 90px !important; }
 
   .hero-inner       { padding: 36px 18px 56px; gap: 32px; }
   .hero-title       { font-size: clamp(36px, 11vw, 52px); letter-spacing: -0.03em; }

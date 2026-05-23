@@ -61,6 +61,7 @@ export default function FeedbackWidget() {
       <button
         onClick={handleOpen}
         title="Send feedback"
+        className="feedback-fab"
         style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 100,
           width: 48, height: 48, borderRadius: '50%', border: 'none',
