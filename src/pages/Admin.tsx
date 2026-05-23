@@ -76,7 +76,7 @@ function SignupChart({ profiles }: { profiles: Profile[] }) {
 }
 
 export default function Admin() {
-  const { user } = useAuthStore()
+  const { user, initialised } = useAuthStore()
   const navigate  = useNavigate()
   const [profiles, setProfiles]   = useState<Profile[]>([])
   const [loading, setLoading]     = useState(true)
@@ -86,10 +86,11 @@ export default function Admin() {
   const ADMIN_EMAILS = ['gweerasinghe67@gmail.com', 'cryptopal95@gmail.com']
 
   useEffect(() => {
+    if (!initialised) return          // wait for Supabase session to load
     if (!user) { navigate('/'); return }
     if (!ADMIN_EMAILS.includes(user.email ?? '')) { navigate('/'); return }
     loadProfiles()
-  }, [user])
+  }, [initialised, user])
 
   async function loadProfiles() {
     setLoading(true)
@@ -119,6 +120,15 @@ export default function Admin() {
     const age = (Date.now() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24)
     return age < 1
   }).length
+
+  // Still waiting for Supabase session — don't redirect yet
+  if (!initialised) {
+    return (
+      <div style={{ minHeight: 'calc(100vh - 56px)', display: 'grid', placeItems: 'center' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-4)' }}>Checking access…</div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ minHeight: 'calc(100vh - 56px)', background: 'var(--bg)', paddingBottom: 64 }}>
