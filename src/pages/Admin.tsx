@@ -382,11 +382,6 @@ function KnowledgeBaseTab({ session }: { session: string }) {
   const filtered = filter === 'all' ? examples : examples.filter(e => e.calc_type === filter)
   const counts   = { lv: examples.filter(e => e.calc_type === 'lv').length, abc: examples.filter(e => e.calc_type === 'abc').length, busbar: examples.filter(e => e.calc_type === 'busbar').length }
 
-  const labelStyle: React.CSSProperties = {
-    fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
-    textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--ink-4)',
-    display: 'block', marginBottom: 6,
-  }
   const tagStyle = (active: boolean): React.CSSProperties => ({
     padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
     cursor: 'pointer', border: '1px solid',

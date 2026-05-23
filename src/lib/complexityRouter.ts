@@ -8,15 +8,15 @@
  *   complex → Opus   (5 cr)  multi-circuit, schedules, protection, ambiguous inputs
  */
 
-import type { AiModelId } from '../store/aiModelStore'
+import type { RealModelId } from '../store/aiModelStore'
 
 export type Complexity = 'simple' | 'medium' | 'complex'
 
 export interface RouteDecision {
   complexity: Complexity
-  modelId:    AiModelId
+  modelId:    RealModelId   // always a real model — router never returns 'auto'
   creditCost: number
-  label:      string   // human-readable reason shown in UI
+  label:      string        // human-readable reason shown in UI
 }
 
 // ── Pattern sets ──────────────────────────────────────────────────────────────
