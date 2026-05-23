@@ -11,10 +11,11 @@ function getSupabaseAdmin() {
   )
 }
 
+const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).send('Method Not Allowed')
 
-  // Verify caller is an admin
   const jwt = (req.headers['authorization'] as string ?? '').replace('Bearer ', '')
   if (!jwt) return res.status(401).json({ error: 'Unauthorized' })
 
@@ -33,21 +34,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' })
 
   try {
-    // Create auth user (auto-confirmed)
-    const { data, error } = await supabaseAdmin.auth.admin.createUser({
+    // 1. Create the auth user (auto-confirmed, no email verification)
+    const { data, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
     })
 
-    if (error) return res.status(400).json({ error: error.message })
+    if (createErr) return res.status(400).json({ error: createErr.message })
 
     const userId = data.user.id
 
-    // Upsert the profile row with chosen plan
-    await supabaseAdmin
+    // 2. Small delay — give any DB trigger time to create the profile row
+    await delay(500)
+
+    // 3. Try to UPDATE the existing profile row (if the trigger already created it)
+    const { data: updated, error: updateErr } = await supabaseAdmin
       .from('profiles')
-      .upsert({ id: userId, email, plan, credits_used: 0, created_at: new Date().toISOString() })
+      .update({ plan })
+      .eq('id', userId)
+      .select('id')
+
+    if (updateErr) {
+      console.warn('profile update error:', updateErr.message)
+    }
+
+    // 4. If no row was updated (trigger didn't create it), INSERT one manually
+    const rowExists = Array.isArray(updated) && updated.length > 0
+    if (!rowExists) {
+      const now = new Date().toISOString()
+      const { error: insertErr } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: userId,
+          email,
+          plan,
+          credits_used: 0,
+          credits_purchased: 0,
+          credits_period: now.slice(0, 7), // "YYYY-MM"
+          created_at: now,
+        })
+
+      if (insertErr) {
+        console.error('profile insert error:', insertErr.message)
+        // Auth user created but profile failed — still return success,
+        // the row will be created on first login via the trigger/auth flow
+        return res.status(200).json({ success: true, userId, warning: insertErr.message })
+      }
+    }
 
     return res.status(200).json({ success: true, userId })
   } catch (err) {

@@ -98,8 +98,10 @@ function AddUserModal({ onClose, onCreated, session }: {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session}` },
         body: JSON.stringify({ email, password, plan }),
       })
-      const data = await res.json() as { success?: boolean; error?: string }
+      const data = await res.json() as { success?: boolean; error?: string; warning?: string }
       if (!res.ok) throw new Error(data.error ?? 'Failed to create user')
+      // Small delay then refresh so the new row is visible
+      await new Promise(r => setTimeout(r, 600))
       onCreated()
       onClose()
     } catch (err) {
