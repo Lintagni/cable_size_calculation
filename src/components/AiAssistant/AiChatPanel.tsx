@@ -310,7 +310,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
         }}>
           <textarea
             ref={textareaRef}
-            rows={3}
+            rows={1}
             value={prompt}
             onChange={e => { setPrompt(e.target.value); autoResize(e.target) }}
             onKeyDown={handleKey}
@@ -319,7 +319,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
             style={{
               width: '100%', background: 'transparent', border: 'none', outline: 'none',
               padding: '16px 16px 8px', fontSize: 14, color: 'var(--ink)',
-              resize: 'none', lineHeight: 1.6, minHeight: 80, maxHeight: 160,
+              resize: 'none', lineHeight: 1.6, minHeight: 24, maxHeight: 160,
               fontFamily: 'var(--font-sans)',
             }}
           />
