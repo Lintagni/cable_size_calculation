@@ -6,6 +6,16 @@ import { useAuthStore } from '../store/authStore'
 import { fetchAllExamples, toggleExample, deleteExample } from '../lib/exampleRetrieval'
 import type { ExampleRow } from '../lib/exampleRetrieval'
 
+/** Always returns parsed JSON; throws with a readable message if the server returns non-JSON */
+async function safeJson<T>(res: Response): Promise<T> {
+  const text = await res.text()
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    throw new Error(`Server error (${res.status}): ${text.slice(0, 200)}`)
+  }
+}
+
 interface Profile {
   id: string
   email: string
@@ -100,7 +110,7 @@ function AddUserModal({ onClose, onCreated, session }: {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session}` },
         body: JSON.stringify({ email, password, plan }),
       })
-      const data = await res.json() as { success?: boolean; error?: string; detail?: unknown }
+      const data = await safeJson<{ success?: boolean; error?: string; detail?: unknown }>(res)
       if (!res.ok) throw new Error(data.error ?? 'Failed to create user')
       onCreated()
       onClose()
@@ -356,7 +366,7 @@ function KnowledgeBaseTab({ session }: { session: string }) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session}` },
         body:    JSON.stringify({ examples: preview }),
       })
-      const data = await res.json() as { inserted?: number; message?: string; error?: string }
+      const data = await safeJson<{ inserted?: number; message?: string; error?: string }>(res)
       if (!res.ok) throw new Error(data.error ?? 'Upload failed')
       showToast(data.message ?? `${data.inserted} examples added`)
       setPreview(null)
@@ -629,7 +639,7 @@ export default function Admin() {
       const res = await fetch('/api/admin/list-users', {
         headers: { Authorization: `Bearer ${session?.access_token ?? ''}` },
       })
-      const json = await res.json() as { profiles?: Profile[]; error?: string }
+      const json = await safeJson<{ profiles?: Profile[]; error?: string }>(res)
       if (!res.ok) throw new Error(json.error ?? 'Failed to load users')
       setProfiles(json.profiles ?? [])
     } catch (err) {
@@ -654,7 +664,7 @@ export default function Admin() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token ?? ''}` },
         body: JSON.stringify({ userId }),
       })
-      const data = await res.json() as { error?: string }
+      const data = await safeJson<{ error?: string }>(res)
       if (!res.ok) throw new Error(data.error ?? 'Delete failed')
       await loadProfiles()
     } catch (err) {

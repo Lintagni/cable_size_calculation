@@ -4,8 +4,9 @@ import { createClient } from '@supabase/supabase-js'
 const ADMIN_EMAILS = ['gweerasinghe67@gmail.com', 'cryptopal95@gmail.com']
 
 const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
+  process.env.VITE_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { persistSession: false } },
 )
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

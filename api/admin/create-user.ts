@@ -14,23 +14,25 @@ function getSupabaseAdmin() {
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms))
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') return res.status(405).send('Method Not Allowed')
+  res.setHeader('Content-Type', 'application/json')
 
-  const jwt = (req.headers['authorization'] as string ?? '').replace('Bearer ', '')
-  if (!jwt) return res.status(401).json({ error: 'Unauthorized' })
-
-  const supabaseAdmin = getSupabaseAdmin()
-  const { data: { user: caller }, error: authErr } = await supabaseAdmin.auth.getUser(jwt)
-  if (authErr || !caller || !ADMIN_EMAILS.includes(caller.email ?? '')) {
-    return res.status(403).json({ error: 'Forbidden' })
-  }
-
-  const { email, password, plan = 'free' } = req.body as {
-    email: string; password: string; plan: 'free' | 'pro' | 'business'
-  }
-  if (!email || !password) return res.status(400).json({ error: 'Email and password required' })
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
+    const jwt = ((req.headers['authorization'] as string) ?? '').replace('Bearer ', '').trim()
+    if (!jwt) return res.status(401).json({ error: 'Unauthorized' })
+
+    const supabaseAdmin = getSupabaseAdmin()
+    const { data: { user: caller }, error: authErr } = await supabaseAdmin.auth.getUser(jwt)
+    if (authErr || !caller || !ADMIN_EMAILS.includes(caller.email ?? '')) {
+      return res.status(403).json({ error: 'Forbidden' })
+    }
+
+    const { email, password, plan = 'free' } = (req.body ?? {}) as {
+      email: string; password: string; plan: 'free' | 'pro' | 'business'
+    }
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' })
+
     // 1. Create auth user
     const { data, error: createErr } = await supabaseAdmin.auth.admin.createUser({
       email, password, email_confirm: true,
@@ -43,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 2. Wait briefly for any DB trigger to auto-create the profile row
     await delay(800)
 
-    // 3. Upsert with all known columns — handles both "trigger ran" and "no trigger" cases
+    // 3. Upsert profile row
     const { error: upsertErr } = await supabaseAdmin
       .from('profiles')
       .upsert(
@@ -53,14 +55,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           plan,
           credits_used:      0,
           credits_purchased: 0,
-          credits_period:    now.slice(0, 7), // "YYYY-MM"
+          credits_period:    now.slice(0, 7),
           created_at:        now,
         },
         { onConflict: 'id', ignoreDuplicates: false },
       )
 
     if (upsertErr) {
-      // Upsert failed — log full detail and return error so admin can see it
       console.error('profile upsert error:', JSON.stringify(upsertErr))
       return res.status(500).json({
         error: `User created in Auth but profile failed: ${upsertErr.message}`,
@@ -69,18 +70,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
-    // 4. Confirm the row exists
     const { data: check } = await supabaseAdmin
       .from('profiles')
       .select('id, plan')
       .eq('id', userId)
       .single()
 
-    console.log('create-user: profile confirmed:', JSON.stringify(check))
     return res.status(200).json({ success: true, userId, profile: check })
 
   } catch (err) {
-    console.error('create-user unexpected error:', err)
-    return res.status(500).json({ error: String(err) })
+    console.error('create-user error:', err)
+    return res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }
 }

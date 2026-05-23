@@ -12,37 +12,37 @@ function getSupabaseAdmin() {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'DELETE') return res.status(405).send('Method Not Allowed')
+  res.setHeader('Content-Type', 'application/json')
 
-  // Verify caller is an admin
-  const jwt = (req.headers['authorization'] as string ?? '').replace('Bearer ', '')
-  if (!jwt) return res.status(401).json({ error: 'Unauthorized' })
-
-  const supabaseAdmin = getSupabaseAdmin()
-  const { data: { user: caller }, error: authErr } = await supabaseAdmin.auth.getUser(jwt)
-  if (authErr || !caller || !ADMIN_EMAILS.includes(caller.email ?? '')) {
-    return res.status(403).json({ error: 'Forbidden' })
-  }
-
-  const { userId } = req.body as { userId: string }
-  if (!userId) return res.status(400).json({ error: 'userId required' })
-
-  // Prevent admin from deleting themselves
-  if (userId === caller.id) {
-    return res.status(400).json({ error: 'Cannot delete your own account' })
-  }
+  if (req.method !== 'DELETE') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
-    // Delete profile row first (FK constraint)
+    const jwt = ((req.headers['authorization'] as string) ?? '').replace('Bearer ', '').trim()
+    if (!jwt) return res.status(401).json({ error: 'Unauthorized' })
+
+    const supabaseAdmin = getSupabaseAdmin()
+    const { data: { user: caller }, error: authErr } = await supabaseAdmin.auth.getUser(jwt)
+    if (authErr || !caller || !ADMIN_EMAILS.includes(caller.email ?? '')) {
+      return res.status(403).json({ error: 'Forbidden' })
+    }
+
+    const { userId } = (req.body ?? {}) as { userId: string }
+    if (!userId) return res.status(400).json({ error: 'userId required' })
+
+    if (userId === caller.id) {
+      return res.status(400).json({ error: 'Cannot delete your own account' })
+    }
+
+    // Delete profile row first (FK constraint), then auth user
     await supabaseAdmin.from('profiles').delete().eq('id', userId)
 
-    // Delete auth user
     const { error } = await supabaseAdmin.auth.admin.deleteUser(userId)
     if (error) return res.status(400).json({ error: error.message })
 
     return res.status(200).json({ success: true })
+
   } catch (err) {
     console.error('delete-user error:', err)
-    return res.status(500).json({ error: String(err) })
+    return res.status(500).json({ error: err instanceof Error ? err.message : String(err) })
   }
 }
