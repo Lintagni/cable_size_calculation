@@ -69,10 +69,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     } catch (fetchErr) {
       clearTimeout(timer)
       const isAbort = fetchErr instanceof Error && fetchErr.name === 'AbortError'
+      // Log the underlying cause so it appears in Vercel function logs
+      const cause = (fetchErr as { cause?: unknown })?.cause
+      console.error('Dodo fetch error:', String(fetchErr), '| cause:', cause)
       return res.status(500).json({
         error: isAbort
           ? 'Payment gateway timed out — please try again.'
           : `Fetch failed: ${String(fetchErr)}`,
+        cause: String(cause ?? ''),
       })
     }
     clearTimeout(timer)
