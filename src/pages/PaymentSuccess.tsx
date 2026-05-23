@@ -29,7 +29,7 @@ export default function PaymentSuccess() {
     }
 
     fetch(
-      `/.netlify/functions/verify-payment?payment_id=${encodeURIComponent(paymentId)}`,
+      `/api/verify-payment?payment_id=${encodeURIComponent(paymentId)}`,
       { headers },
     )
       .then(r => r.json())
