@@ -8,7 +8,7 @@ interface Profile {
   id: string
   email: string
   plan: 'free' | 'pro' | 'business'
-  ai_credits_used: number
+  credits_used: number
   created_at: string
 }
 
@@ -203,7 +203,7 @@ export default function Admin() {
     setLoading(true)
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, plan, ai_credits_used, created_at')
+      .select('id, email, plan, credits_used, created_at')
       .order('created_at', { ascending: false })
       .limit(200)
     if (error) { setError(error.message); setLoading(false); return }
@@ -239,7 +239,7 @@ export default function Admin() {
   const total       = profiles.length
   const byPlan      = { free: 0, pro: 0, business: 0 }
   let totalCredits  = 0
-  profiles.forEach(p => { byPlan[p.plan]++; totalCredits += p.ai_credits_used ?? 0 })
+  profiles.forEach(p => { byPlan[p.plan]++; totalCredits += p.credits_used ?? 0 })
   const todaySignups = profiles.filter(p =>
     (Date.now() - new Date(p.created_at).getTime()) / (1000 * 60 * 60 * 24) < 1
   ).length
@@ -344,7 +344,7 @@ export default function Admin() {
                     </div>
 
                     <div style={{ padding: '12px 16px', fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--ink-2)' }}>
-                      {p.ai_credits_used ?? 0}
+                      {p.credits_used ?? 0}
                     </div>
 
                     <div style={{ padding: '12px 16px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-3)' }}>

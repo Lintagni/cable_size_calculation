@@ -47,7 +47,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Upsert the profile row with chosen plan
     await supabaseAdmin
       .from('profiles')
-      .upsert({ id: userId, email, plan, ai_credits_used: 0, created_at: new Date().toISOString() })
+      .upsert({ id: userId, email, plan, credits_used: 0, created_at: new Date().toISOString() })
 
     return res.status(200).json({ success: true, userId })
   } catch (err) {
