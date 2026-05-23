@@ -15,8 +15,12 @@ const PACK_CREDITS: Record<string, number> = {
 
 // Subscription plans: product ID → plan tier (credits handled by webhook)
 const SUBSCRIPTION_IDS = new Set([
-  process.env.PRODUCT_PLAN_PRO      ?? 'pdt_0NfKXSIx1EMeoQ0buSGxU',
-  process.env.PRODUCT_PLAN_BUSINESS ?? 'pdt_0NfKXWTQpI8bLIQHzwzE6',
+  // Monthly
+  process.env.PRODUCT_PLAN_PRO          ?? 'pdt_0NfKXSIx1EMeoQ0buSGxU',
+  process.env.PRODUCT_PLAN_BUSINESS     ?? 'pdt_0NfKXWTQpI8bLIQHzwzE6',
+  // Yearly
+  process.env.PRODUCT_PLAN_PRO_YEAR      ?? 'pdt_0NfTAQYQofroLJNeMoOYv',
+  process.env.PRODUCT_PLAN_BUSINESS_YEAR ?? 'pdt_0NfTAQcbASBXw55XMzQzN',
 ])
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

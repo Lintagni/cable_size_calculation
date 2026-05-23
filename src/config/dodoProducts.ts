@@ -10,7 +10,11 @@ export const DODO_PRODUCTS = {
   STUDIO:     import.meta.env.VITE_PRODUCT_STUDIO     || 'pdt_0NfKXI6kBSG4QsZCeZ3j3',
   ENTERPRISE: import.meta.env.VITE_PRODUCT_ENTERPRISE || 'pdt_0NfKXNDghtiQ6Vn9trCKx',
 
-  // ── Subscription plans ─────────────────────────────────────────────────────
-  PLAN_PRO:      import.meta.env.VITE_PRODUCT_PLAN_PRO      || 'pdt_0NfKXSIx1EMeoQ0buSGxU',
-  PLAN_BUSINESS: import.meta.env.VITE_PRODUCT_PLAN_BUSINESS || 'pdt_0NfKXWTQpI8bLIQHzwzE6',
+  // ── Subscription plans — monthly ───────────────────────────────────────────
+  PLAN_PRO:          import.meta.env.VITE_PRODUCT_PLAN_PRO          || 'pdt_0NfKXSIx1EMeoQ0buSGxU',
+  PLAN_BUSINESS:     import.meta.env.VITE_PRODUCT_PLAN_BUSINESS     || 'pdt_0NfKXWTQpI8bLIQHzwzE6',
+
+  // ── Subscription plans — yearly ────────────────────────────────────────────
+  PLAN_PRO_YEAR:      import.meta.env.VITE_PRODUCT_PLAN_PRO_YEAR      || 'pdt_0NfTAQYQofroLJNeMoOYv',
+  PLAN_BUSINESS_YEAR: import.meta.env.VITE_PRODUCT_PLAN_BUSINESS_YEAR || 'pdt_0NfTAQcbASBXw55XMzQzN',
 } as const

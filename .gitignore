@@ -3,6 +3,9 @@
 .env.local
 .env.production
 
+# Local secrets / credentials — never commit
+keys.txt
+
 # Claude Code config
 .claude/
 
@@ -30,3 +33,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+.vercel
+.env*

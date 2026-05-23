@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore'
 import { DODO_PRODUCTS } from '../config/dodoProducts'
 
 // product ID → null means "free" (no checkout needed)
+// Each plan has separate IDs for monthly and yearly billing
 const PLANS = [
   {
     name: 'Free', tag: 'Try it',
@@ -12,7 +13,9 @@ const PLANS = [
     blurb: 'For occasional sizing and exploring the methodology.',
     features: ['LV cable sizing · 5/day', 'Voltage drop check', 'AI assistant · 10/mo', 'Calculation history · last 5'],
     excluded: ['Short circuit', 'Motor sizing', 'PDF export', 'ABC, Busbar'],
-    cta: 'Get started', ctaClass: 'btn', productId: null as string | null, featured: false,
+    cta: 'Get started', ctaClass: 'btn',
+    productId: { month: null as string | null, year: null as string | null },
+    featured: false,
   },
   {
     name: 'Pro', tag: 'Practising engineers',
@@ -20,7 +23,9 @@ const PLANS = [
     blurb: 'For engineers who need the full BS7671 toolset.',
     features: ['Everything in Free', 'Unlimited LV sizing', 'AI assistant · 200/mo', 'Short circuit · Motor sizing', 'Aluminium sizing', 'PDF report export', 'Unlimited history'],
     excluded: ['ABC calculator', 'Busbar sizing'],
-    cta: 'Start free trial', ctaClass: 'btn btn-accent', productId: DODO_PRODUCTS.PLAN_PRO, featured: true,
+    cta: 'Start free trial', ctaClass: 'btn btn-accent',
+    productId: { month: DODO_PRODUCTS.PLAN_PRO, year: DODO_PRODUCTS.PLAN_PRO_YEAR },
+    featured: true,
   },
   {
     name: 'Business', tag: 'Consultancies',
@@ -28,7 +33,9 @@ const PLANS = [
     blurb: 'For design firms needing every tool, with team access.',
     features: ['Everything in Pro', 'AI assistant · 2,000/mo', 'ABC cable (NFC 33-209)', 'Busbar sizing (Cu & Al)', 'Multi-user team access', 'API access', 'Priority support', 'Custom branding on reports'],
     excluded: [],
-    cta: 'Get Business', ctaClass: 'btn btn-primary', productId: DODO_PRODUCTS.PLAN_BUSINESS, featured: false,
+    cta: 'Get Business', ctaClass: 'btn btn-primary',
+    productId: { month: DODO_PRODUCTS.PLAN_BUSINESS, year: DODO_PRODUCTS.PLAN_BUSINESS_YEAR },
+    featured: false,
   },
 ]
 
@@ -127,7 +134,8 @@ export default function Pricing() {
         {/* Plan cards */}
         <div className="pricing-grid">
           {PLANS.map(p => {
-            const price = p.price[period]
+            const price     = p.price[period]
+            const productId = p.productId[period]
             return (
               <article key={p.name} className={`plan-card${p.featured ? ' featured' : ''}`}>
                 {p.featured && <div className="featured-banner">Recommended</div>}
@@ -147,10 +155,10 @@ export default function Pricing() {
                 <p className="plan-blurb">{p.blurb}</p>
                 <button
                   className={`${p.ctaClass} btn-lg plan-cta`}
-                  disabled={buying === p.productId}
-                  onClick={() => handleCta(p.productId)}
+                  disabled={buying === productId}
+                  onClick={() => handleCta(productId)}
                 >
-                  {buying === p.productId ? 'Redirecting…' : p.cta}
+                  {buying === productId ? 'Redirecting…' : p.cta}
                 </button>
                 <ul className="plan-features">
                   {p.features.map((f, i) => (

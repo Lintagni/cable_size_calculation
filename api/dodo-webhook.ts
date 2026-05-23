@@ -3,9 +3,14 @@ import crypto from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 
 // Inlined to avoid cross-file ESM import issues on Node ≥ 22.
+// Both monthly and yearly products map to the same plan tier.
 const PLAN_MAP: Record<string, 'pro' | 'business'> = {
-  [process.env.PRODUCT_PLAN_PRO      ?? 'pdt_0NfKXSIx1EMeoQ0buSGxU']: 'pro',
-  [process.env.PRODUCT_PLAN_BUSINESS ?? 'pdt_0NfKXWTQpI8bLIQHzwzE6']: 'business',
+  // Monthly
+  [process.env.PRODUCT_PLAN_PRO          ?? 'pdt_0NfKXSIx1EMeoQ0buSGxU']: 'pro',
+  [process.env.PRODUCT_PLAN_BUSINESS     ?? 'pdt_0NfKXWTQpI8bLIQHzwzE6']: 'business',
+  // Yearly
+  [process.env.PRODUCT_PLAN_PRO_YEAR      ?? 'pdt_0NfTAQYQofroLJNeMoOYv']: 'pro',
+  [process.env.PRODUCT_PLAN_BUSINESS_YEAR ?? 'pdt_0NfTAQcbASBXw55XMzQzN']: 'business',
 }
 
 // Must disable body parsing so we get the raw body for signature verification
