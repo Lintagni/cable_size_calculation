@@ -8,16 +8,35 @@ export default function AiPage() {
   const navigate  = useNavigate()
   const setAction = usePendingActionStore(s => s.setAction)
 
-  // On mobile the browser may scroll the body when the textarea is focused
-  // (keyboard opens), shifting .ai-page upward.  We snap scroll back to 0
-  // on every visual-viewport resize (covers both open and close).
+  // On mobile, CSS dvh/vh are unreliable across browsers (Samsung, Firefox,
+  // older Chrome) and don't consistently account for the soft keyboard.
+  // We use visualViewport.height — the only API that reliably reports the
+  // visible area minus keyboard on both Android and iOS — and set .ai-page
+  // height directly in JS. This also prevents body scroll shifts.
   useEffect(() => {
-    window.scrollTo(0, 0)
+    const page = document.querySelector<HTMLElement>('.ai-page')
+    if (!page) return
+
+    const applyHeight = () => {
+      if (window.innerWidth > 720) { page.style.height = ''; return }
+      const vvpH  = window.visualViewport?.height ?? window.innerHeight
+      const topH  = document.querySelector<HTMLElement>('.topbar')?.offsetHeight ?? 56
+      page.style.height = `${vvpH - topH - 76}px`
+      window.scrollTo(0, 0)
+    }
+
+    applyHeight()
     const vvp = window.visualViewport
-    if (!vvp) return
-    const onResize = () => window.scrollTo(0, 0)
-    vvp.addEventListener('resize', onResize)
-    return () => vvp.removeEventListener('resize', onResize)
+    vvp?.addEventListener('resize',  applyHeight)
+    vvp?.addEventListener('scroll',  applyHeight)
+    window.addEventListener('resize', applyHeight)
+
+    return () => {
+      page.style.height = ''
+      vvp?.removeEventListener('resize',  applyHeight)
+      vvp?.removeEventListener('scroll',  applyHeight)
+      window.removeEventListener('resize', applyHeight)
+    }
   }, [])
 
   function handleFillAction(action: FillAction) {

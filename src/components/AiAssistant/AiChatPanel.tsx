@@ -329,7 +329,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   if (!hasMessages) {
     return (
       <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+        flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', padding: '0 16px 32px',
         overflowY: 'auto',
       }}>
@@ -492,7 +492,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
     <div className="flex flex-col" style={{ flex: 1, minHeight: 0 }}>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto py-6" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div className="flex-1 overflow-y-auto py-6" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: 0 }}>
       <div style={{ width: '100%', maxWidth: 640, padding: '0 16px', display: 'flex', flexDirection: 'column', gap: 24, marginTop: 'auto' }}>
         {messages.map((msg, i) => (
           <div key={i}>
