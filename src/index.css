@@ -1023,8 +1023,7 @@ html, body {
   min-width: 0;
 }
 .mobile-nav a.active        { background: var(--ink); color: var(--bg); }
-.mobile-nav a span          { display: none; letter-spacing: 0.02em; white-space: nowrap; }
-.mobile-nav a.active span   { display: block; }
+.mobile-nav a span          { display: block; letter-spacing: 0.02em; white-space: nowrap; }
 
 /* Upgrade banner */
 .upgrade-banner {
