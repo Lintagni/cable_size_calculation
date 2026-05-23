@@ -1002,6 +1002,8 @@ html, body {
   height: calc(100vh - 60px);
   height: calc(100dvh - 60px);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 @media (max-width: 720px) {
   .ai-page {

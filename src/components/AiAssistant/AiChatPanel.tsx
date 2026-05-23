@@ -329,8 +329,8 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   if (!hasMessages) {
     return (
       <div style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', height: '100%', padding: '0 16px 32px',
+        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', padding: '0 16px 32px',
         overflowY: 'auto',
       }}>
         {/* Eyebrow */}
@@ -489,7 +489,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
 
   // ── Chat mode ──────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col" style={{ flex: 1, minHeight: 0 }}>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto py-6" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

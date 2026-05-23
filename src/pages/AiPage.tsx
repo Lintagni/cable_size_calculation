@@ -8,23 +8,16 @@ export default function AiPage() {
   const navigate  = useNavigate()
   const setAction = usePendingActionStore(s => s.setAction)
 
-  // On mobile, the browser scrolls the <body> when the keyboard opens to try
-  // to bring the focused textarea into view.  That shifts .ai-page (which is
-  // in normal flow) upward, making the input bar disappear behind the keyboard.
-  // Locking overflow on <html> and <body> prevents that scroll entirely;
-  // 100dvh in the CSS handles the keyboard height change natively.
+  // On mobile the browser may scroll the body when the textarea is focused
+  // (keyboard opens), shifting .ai-page upward.  We snap scroll back to 0
+  // on every visual-viewport resize (covers both open and close).
   useEffect(() => {
-    const html = document.documentElement
-    const body = document.body
-    const prevHtml = html.style.overflow
-    const prevBody = body.style.overflow
-    html.style.overflow = 'hidden'
-    body.style.overflow = 'hidden'
     window.scrollTo(0, 0)
-    return () => {
-      html.style.overflow = prevHtml
-      body.style.overflow = prevBody
-    }
+    const vvp = window.visualViewport
+    if (!vvp) return
+    const onResize = () => window.scrollTo(0, 0)
+    vvp.addEventListener('resize', onResize)
+    return () => vvp.removeEventListener('resize', onResize)
   }, [])
 
   function handleFillAction(action: FillAction) {
