@@ -58,22 +58,24 @@ export default function App() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <Routes>
-      {/* Public pages */}
-      <Route path="/"        element={<Shell><Landing /></Shell>} />
-      <Route path="/pricing" element={<Shell><Pricing /></Shell>} />
+    <>
+      <Routes>
+        {/* Public pages */}
+        <Route path="/"        element={<Shell><Landing /></Shell>} />
+        <Route path="/pricing" element={<Shell><Pricing /></Shell>} />
 
-      {/* Protected — require Supabase login */}
-      <Route path="/calculator" element={<ProtectedShell><Calculator /></ProtectedShell>} />
-      <Route path="/ai"         element={<ProtectedShell><AiPage /></ProtectedShell>} />
-      <Route path="/dashboard"  element={<ProtectedShell><Dashboard /></ProtectedShell>} />
+        {/* Protected — require Supabase login */}
+        <Route path="/calculator" element={<ProtectedShell><Calculator /></ProtectedShell>} />
+        <Route path="/ai"         element={<ProtectedShell><AiPage /></ProtectedShell>} />
+        <Route path="/dashboard"  element={<ProtectedShell><Dashboard /></ProtectedShell>} />
 
-      {/* Admin */}
-      <Route path="/admin" element={<Shell><Admin /></Shell>} />
+        {/* Admin */}
+        <Route path="/admin" element={<Shell><Admin /></Shell>} />
 
-      {/* Misc */}
-      <Route path="/payment-success" element={<PaymentSuccess />} />
-    </Routes>
-    <FeedbackGate />
+        {/* Misc */}
+        <Route path="/payment-success" element={<PaymentSuccess />} />
+      </Routes>
+      <FeedbackGate />
+    </>
   )
 }
