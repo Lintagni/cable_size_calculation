@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 // Inlined to avoid cross-file ESM import issues on Node ≥ 22.
 // Override with PRODUCT_* env vars to switch to live-mode product IDs.
+
+// One-time packs: product ID → credits granted
 const PACK_CREDITS: Record<string, number> = {
   [process.env.PRODUCT_STARTER    ?? 'pdt_0NfKWwNlgLAUIRjgrInu5']: 25,
   [process.env.PRODUCT_BOOST      ?? 'pdt_0NfKX4XJ839wZrSHM3Qkz']: 75,
@@ -10,6 +12,12 @@ const PACK_CREDITS: Record<string, number> = {
   [process.env.PRODUCT_STUDIO     ?? 'pdt_0NfKXI6kBSG4QsZCeZ3j3']: 1500,
   [process.env.PRODUCT_ENTERPRISE ?? 'pdt_0NfKXNDghtiQ6Vn9trCKx']: 5000,
 }
+
+// Subscription plans: product ID → plan tier (credits handled by webhook)
+const SUBSCRIPTION_IDS = new Set([
+  process.env.PRODUCT_PLAN_PRO      ?? 'pdt_0NfKXSIx1EMeoQ0buSGxU',
+  process.env.PRODUCT_PLAN_BUSINESS ?? 'pdt_0NfKXWTQpI8bLIQHzwzE6',
+])
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Content-Type', 'application/json')
@@ -27,8 +35,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'productId is required' })
     }
 
-    const credits = PACK_CREDITS[productId]
-    if (!credits) {
+    const isSubscription = SUBSCRIPTION_IDS.has(productId)
+    const credits        = PACK_CREDITS[productId]   // undefined for subscription products
+
+    if (!credits && !isSubscription) {
       return res.status(400).json({ error: `Unknown product: ${productId}` })
     }
 
@@ -73,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           payment_link: true,
           return_url: `${siteUrl}/payment-success`,
           metadata: {
-            credits: String(credits),
+            ...(credits   ? { credits:    String(credits)   } : {}),
             ...(userId    ? { user_id:    String(userId)    } : {}),
             ...(userEmail ? { user_email: String(userEmail) } : {}),
           },
