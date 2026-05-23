@@ -20,8 +20,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Guard against unparsed / null body (Vercel auto-parses JSON but can return null)
-    const body = (req.body ?? {}) as { productId?: string; userId?: string | null }
-    const { productId, userId } = body
+    const body = (req.body ?? {}) as { productId?: string; userId?: string | null; userEmail?: string | null }
+    const { productId, userId, userEmail } = body
 
     if (!productId) {
       return res.status(400).json({ error: 'productId is required' })
@@ -60,14 +60,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
         signal: controller.signal,
         body: JSON.stringify({
-          billing: { city: '', country: 'US', state: '', street: '', zipcode: '' },
-          customer: { create_new_customer: true },
+          // CustomerRequest enum accepts { email, name } for new customer
+          // or { customer_id } for existing. Omit entirely if no email known.
+          ...(userEmail ? {
+            customer: {
+              email: userEmail,
+              name:  userEmail.split('@')[0],
+            },
+          } : {}),
+          billing: { city: 'N/A', country: 'US', state: 'N/A', street: 'N/A', zipcode: '00000' },
           product_cart: [{ product_id: productId, quantity: 1 }],
           payment_link: true,
           return_url: `${siteUrl}/payment-success`,
           metadata: {
             credits: String(credits),
-            ...(userId ? { user_id: String(userId) } : {}),
+            ...(userId    ? { user_id:    String(userId)    } : {}),
+            ...(userEmail ? { user_email: String(userEmail) } : {}),
           },
         }),
       })

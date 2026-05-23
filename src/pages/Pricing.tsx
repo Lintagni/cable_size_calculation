@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { CheckCircle, X, Plus } from 'lucide-react'
-import { usePlanStore } from '../store/planStore'
+import { useNavigate } from 'react-router-dom'
+import { useAuthStore } from '../store/authStore'
+import { DODO_PRODUCTS } from '../config/dodoProducts'
 
+// product ID → null means "free" (no checkout needed)
 const PLANS = [
   {
     name: 'Free', tag: 'Try it',
@@ -9,7 +12,7 @@ const PLANS = [
     blurb: 'For occasional sizing and exploring the methodology.',
     features: ['LV cable sizing · 5/day', 'Voltage drop check', 'AI assistant · 10/mo', 'Calculation history · last 5'],
     excluded: ['Short circuit', 'Motor sizing', 'PDF export', 'ABC, Busbar'],
-    cta: 'Get started', ctaClass: 'btn', planValue: 'free' as const, featured: false,
+    cta: 'Get started', ctaClass: 'btn', productId: null as string | null, featured: false,
   },
   {
     name: 'Pro', tag: 'Practising engineers',
@@ -17,7 +20,7 @@ const PLANS = [
     blurb: 'For engineers who need the full BS7671 toolset.',
     features: ['Everything in Free', 'Unlimited LV sizing', 'AI assistant · 200/mo', 'Short circuit · Motor sizing', 'Aluminium sizing', 'PDF report export', 'Unlimited history'],
     excluded: ['ABC calculator', 'Busbar sizing'],
-    cta: 'Start free trial', ctaClass: 'btn btn-accent', planValue: 'pro' as const, featured: true,
+    cta: 'Start free trial', ctaClass: 'btn btn-accent', productId: DODO_PRODUCTS.PLAN_PRO, featured: true,
   },
   {
     name: 'Business', tag: 'Consultancies',
@@ -25,7 +28,7 @@ const PLANS = [
     blurb: 'For design firms needing every tool, with team access.',
     features: ['Everything in Pro', 'AI assistant · 2,000/mo', 'ABC cable (NFC 33-209)', 'Busbar sizing (Cu & Al)', 'Multi-user team access', 'API access', 'Priority support', 'Custom branding on reports'],
     excluded: [],
-    cta: 'Contact sales', ctaClass: 'btn btn-primary', planValue: 'business' as const, featured: false,
+    cta: 'Get Business', ctaClass: 'btn btn-primary', productId: DODO_PRODUCTS.PLAN_BUSINESS, featured: false,
   },
 ]
 
@@ -71,8 +74,39 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function Pricing() {
-  const { setPlan } = usePlanStore()
-  const [period, setPeriod] = useState<'month' | 'year'>('month')
+  const { user }    = useAuthStore()
+  const navigate    = useNavigate()
+  const [period, setPeriod]       = useState<'month' | 'year'>('month')
+  const [buying,  setBuying]      = useState<string | null>(null)
+  const [buyError, setBuyError]   = useState<string | null>(null)
+
+  async function handleCta(productId: string | null) {
+    setBuyError(null)
+    if (!productId) { navigate('/calculator'); return }
+    if (!user)      { navigate('/calculator'); return }   // landing will show auth modal
+
+    setBuying(productId)
+    try {
+      const res  = await fetch('/api/create-checkout', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ productId, userId: user.id, userEmail: user.email }),
+      })
+      const text = await res.text()
+      let data: { checkoutUrl?: string; error?: string; cause?: string }
+      try { data = JSON.parse(text) } catch { throw new Error(`Server error (${res.status})`) }
+
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl
+      } else {
+        throw new Error(data.cause ? `${data.error} — ${data.cause}` : (data.error ?? 'No checkout URL returned'))
+      }
+    } catch (err) {
+      setBuyError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBuying(null)
+    }
+  }
 
   return (
     <div className="pricing">
@@ -113,9 +147,10 @@ export default function Pricing() {
                 <p className="plan-blurb">{p.blurb}</p>
                 <button
                   className={`${p.ctaClass} btn-lg plan-cta`}
-                  onClick={() => setPlan(p.planValue)}
+                  disabled={buying === p.productId}
+                  onClick={() => handleCta(p.productId)}
                 >
-                  {p.cta}
+                  {buying === p.productId ? 'Redirecting…' : p.cta}
                 </button>
                 <ul className="plan-features">
                   {p.features.map((f, i) => (
@@ -129,6 +164,12 @@ export default function Pricing() {
             )
           })}
         </div>
+
+        {buyError && (
+          <p style={{ textAlign: 'center', color: 'var(--fail)', fontSize: 13, marginTop: 16 }}>
+            ⚠ {buyError}
+          </p>
+        )}
 
         {/* Compare table */}
         <div className="compare">

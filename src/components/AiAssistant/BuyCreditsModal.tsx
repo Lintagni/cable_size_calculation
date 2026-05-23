@@ -45,7 +45,7 @@ export default function BuyCreditsModal({ onClose }: Props) {
       const res = await fetch('/api/create-checkout', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ productId, userId: user?.id ?? null }),
+        body:    JSON.stringify({ productId, userId: user?.id ?? null, userEmail: user?.email ?? null }),
       })
       if (res.status === 404) throw new Error('Payment service not available on local dev.')
 

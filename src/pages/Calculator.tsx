@@ -101,7 +101,7 @@ function MetaField({ label, value, onChange }: { label: string; value: string; o
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Calculator() {
-  const { plan, setPlan }  = usePlanStore()
+  const { plan }           = usePlanStore()
   const { record }         = useAiQuotaStore()
   const { push }           = useHistoryStore()
   const { action: pending, clearAction } = usePendingActionStore()
@@ -258,15 +258,6 @@ export default function Calculator() {
               )
             })}
 
-            {/* Dev: cycle plans */}
-            <button
-              className="calc-tab"
-              style={{ marginLeft: 'auto', color: 'var(--ink-4)', fontSize: 11 }}
-              onClick={() => setPlan(plan === 'free' ? 'pro' : plan === 'pro' ? 'business' : 'free')}
-              title="Dev: cycle plans"
-            >
-              [{(plan as string).toUpperCase()}]
-            </button>
           </div>
         </div>
       </div>
