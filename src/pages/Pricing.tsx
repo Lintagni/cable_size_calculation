@@ -155,10 +155,10 @@ export default function Pricing() {
                 <p className="plan-blurb">{p.blurb}</p>
                 <button
                   className={`${p.ctaClass} btn-lg plan-cta`}
-                  disabled={buying === productId}
+                  disabled={productId !== null && buying === productId}
                   onClick={() => handleCta(productId)}
                 >
-                  {buying === productId ? 'Redirecting…' : p.cta}
+                  {productId !== null && buying === productId ? 'Redirecting…' : p.cta}
                 </button>
                 <ul className="plan-features">
                   {p.features.map((f, i) => (
