@@ -84,21 +84,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Trust strip ── */}
-      <section className="strip">
-        <div className="strip-inner">
-          <span className="section-eyebrow">Trusted by engineers at</span>
-          <div className="strip-logos">
-            <span>ARUP</span><span>·</span>
-            <span>WSP</span><span>·</span>
-            <span>MOTT MACDONALD</span><span>·</span>
-            <span>HOARE LEA</span><span>·</span>
-            <span>ATKINS</span><span>·</span>
-            <span>BURO HAPPOLD</span>
-          </div>
-        </div>
-      </section>
-
       {/* ── Features ── */}
       <section className="features">
         <div className="container">
