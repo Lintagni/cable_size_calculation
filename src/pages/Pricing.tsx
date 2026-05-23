@@ -90,7 +90,10 @@ export default function Pricing() {
   async function handleCta(productId: string | null) {
     setBuyError(null)
     if (!productId) { navigate('/calculator'); return }
-    if (!user)      { navigate('/calculator'); return }   // landing will show auth modal
+    if (!user) {
+      setBuyError('Please sign in first — click the account icon in the top-right corner, then come back to upgrade.')
+      return
+    }
 
     setBuying(productId)
     try {
@@ -130,6 +133,19 @@ export default function Pricing() {
             </button>
           </div>
         </header>
+
+        {/* Error banner — shown above plan cards so it's always visible */}
+        {buyError && (
+          <div style={{
+            margin: '0 auto 24px', maxWidth: 640,
+            padding: '12px 16px', borderRadius: 10,
+            background: 'color-mix(in oklch, var(--fail) 8%, transparent)',
+            border: '1px solid color-mix(in oklch, var(--fail) 30%, transparent)',
+            color: 'var(--fail)', fontSize: 13, lineHeight: 1.5, textAlign: 'center',
+          }}>
+            ⚠ {buyError}
+          </div>
+        )}
 
         {/* Plan cards */}
         <div className="pricing-grid">
@@ -173,11 +189,6 @@ export default function Pricing() {
           })}
         </div>
 
-        {buyError && (
-          <p style={{ textAlign: 'center', color: 'var(--fail)', fontSize: 13, marginTop: 16 }}>
-            ⚠ {buyError}
-          </p>
-        )}
 
         {/* Compare table */}
         <div className="compare">
