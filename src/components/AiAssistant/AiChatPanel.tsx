@@ -11,6 +11,7 @@ import type { LvCableResult } from '../../calculators/lvCableSizing'
 import MarkdownMessage from './MarkdownMessage'
 import BuyCreditsModal from './BuyCreditsModal'
 import { Link } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
 
 interface Props {
   currentResult: LvCableResult | null
@@ -240,7 +241,27 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
 
   async function handleSubmit() {
     if (!prompt.trim() || streaming || !canQuery) return
+
+    // 1. Deduct locally (instant UI feedback)
     consume(modelId, plan)
+
+    // 2. Persist updated credits to DB so loadProfile() sees the correct value
+    //    after refresh. Fire-and-forget — don't block the send.
+    void (async () => {
+      try {
+        const { record } = useAiQuotaStore.getState()
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) return
+        await supabase.from('profiles').update({
+          credits_used:      record.used,
+          credits_purchased: record.purchased,
+          credits_period:    record.period,
+        }).eq('id', session.user.id)
+      } catch (e) {
+        console.warn('credits sync to DB failed:', e)
+      }
+    })()
+
     const text = prompt.trim()
     const assistantIdx = messages.length + 1
     setPrompt('')

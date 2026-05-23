@@ -153,12 +153,25 @@ export const useAiQuotaStore = create<AiQuotaStore>()(
         },
       })),
 
-      setFromProfile: (profile) => set({
-        record: {
-          period:    profile.credits_period || currentPeriod(),
-          used:      profile.credits_used,
-          purchased: profile.credits_purchased,
-        },
+      setFromProfile: (profile) => set(s => {
+        const dbPeriod  = profile.credits_period || currentPeriod()
+        const now       = currentPeriod()
+
+        // If the DB period is the current month, keep whichever `used` value is
+        // higher. This prevents loadProfile() from resetting credits that were
+        // consumed locally but whose DB write hasn't landed yet (fire-and-forget
+        // race condition). Purchased credits always come from DB (authoritative).
+        const localUsed = (s.record.period === dbPeriod && dbPeriod === now)
+          ? s.record.used
+          : 0
+
+        return {
+          record: {
+            period:    dbPeriod,
+            used:      Math.max(profile.credits_used, localUsed),
+            purchased: profile.credits_purchased,
+          },
+        }
       }),
 
       resetForDev: () => set({ record: { period: currentPeriod(), used: 0, purchased: 0 } }),

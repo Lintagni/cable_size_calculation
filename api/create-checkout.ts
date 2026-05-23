@@ -2,61 +2,96 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { PACK_CREDITS } from './_products'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).send('Method Not Allowed')
-  }
-
-  const { productId, userId } = req.body as { productId: string; userId?: string | null }
-  const credits = PACK_CREDITS[productId]
-
-  if (!credits) {
-    return res.status(400).json({ error: 'Invalid product ID' })
-  }
-
-  // Fix operator-precedence: SITE_URL takes priority, then VERCEL_URL, else localhost
-  const siteUrl = process.env.SITE_URL
-    ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173')
-
-  if (!process.env.DODO_SECRET_KEY) {
-    console.error('create-checkout: DODO_SECRET_KEY env var is not set')
-    return res.status(500).json({ error: 'Payment service not configured (missing API key).' })
-  }
-
+  // ── Top-level guard: any uncaught throw returns JSON, not Vercel's HTML error ──
   try {
-    const dodoRes = await fetch('https://api.dodopayments.com/payments', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.DODO_SECRET_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      // Abort if Dodo API doesn't respond within 9 s (Vercel hobby limit is 10 s)
-      signal: AbortSignal.timeout(9000),
-      body: JSON.stringify({
-        billing: { city: '', country: 'US', state: '', street: '', zipcode: '' },
-        customer: { create_new_customer: true },
-        product_cart: [{ product_id: productId, quantity: 1 }],
-        payment_link: true,
-        return_url: `${siteUrl}/payment-success`,
-        metadata: { credits: String(credits), ...(userId ? { user_id: userId } : {}) },
-      }),
-    })
+    if (req.method !== 'POST') {
+      return res.status(405).json({ error: 'Method Not Allowed' })
+    }
 
-    const data = await dodoRes.json() as { payment_link?: string; payment_id?: string; [key: string]: unknown }
-    console.log('Dodo create-payment response:', JSON.stringify(data))
+    // Guard against unparsed / null body (Vercel auto-parses JSON but can return null)
+    const body = (req.body ?? {}) as { productId?: string; userId?: string | null }
+    const { productId, userId } = body
 
-    if (!dodoRes.ok) throw new Error(JSON.stringify(data))
+    if (!productId) {
+      return res.status(400).json({ error: 'productId is required' })
+    }
+
+    const credits = PACK_CREDITS[productId]
+    if (!credits) {
+      return res.status(400).json({ error: `Unknown product: ${productId}` })
+    }
+
+    const siteUrl = process.env.SITE_URL
+      ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:5173')
+
+    const dodoKey = process.env.DODO_SECRET_KEY
+    if (!dodoKey) {
+      console.error('create-checkout: DODO_SECRET_KEY env var is not set')
+      return res.status(500).json({ error: 'Payment service not configured.' })
+    }
+
+    // Manual timeout via AbortController (compatible with all Node.js ≥ 14)
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 9000)
+
+    let dodoRes: Response
+    try {
+      dodoRes = await fetch('https://api.dodopayments.com/payments', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${dodoKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          billing: { city: '', country: 'US', state: '', street: '', zipcode: '' },
+          customer: { create_new_customer: true },
+          product_cart: [{ product_id: productId, quantity: 1 }],
+          payment_link: true,
+          return_url: `${siteUrl}/payment-success`,
+          metadata: {
+            credits: String(credits),
+            ...(userId ? { user_id: String(userId) } : {}),
+          },
+        }),
+      })
+    } catch (fetchErr) {
+      clearTimeout(timer)
+      const isAbort = fetchErr instanceof Error && fetchErr.name === 'AbortError'
+      return res.status(500).json({
+        error: isAbort
+          ? 'Payment gateway timed out — please try again.'
+          : `Fetch failed: ${String(fetchErr)}`,
+      })
+    }
+    clearTimeout(timer)
+
+    // Parse Dodo response (may not be JSON if gateway is down)
+    const rawText = await dodoRes.text()
+    let data: { payment_link?: string; payment_id?: string; [key: string]: unknown } = {}
+    try {
+      data = JSON.parse(rawText)
+    } catch {
+      console.error('Dodo non-JSON response:', rawText.slice(0, 300))
+      return res.status(502).json({ error: `Payment gateway returned unexpected response (${dodoRes.status}).` })
+    }
+
+    console.log('Dodo response:', dodoRes.status, JSON.stringify(data).slice(0, 400))
+
+    if (!dodoRes.ok) {
+      return res.status(502).json({ error: `Dodo error ${dodoRes.status}: ${JSON.stringify(data)}` })
+    }
 
     if (!data.payment_link) {
-      console.error('Dodo response missing payment_link:', JSON.stringify(data))
-      throw new Error('Dodo did not return a payment link.')
+      console.error('Dodo missing payment_link:', JSON.stringify(data))
+      return res.status(502).json({ error: 'Payment gateway did not return a checkout URL.' })
     }
 
     return res.status(200).json({ checkoutUrl: data.payment_link, paymentId: data.payment_id })
+
   } catch (err) {
-    console.error('create-checkout error:', err)
-    const msg = err instanceof Error && err.name === 'TimeoutError'
-      ? 'Payment gateway timed out — please try again.'
-      : String(err)
-    return res.status(500).json({ error: msg })
+    // Catch-all: ensures this function always returns JSON, never Vercel's HTML 500
+    console.error('create-checkout unhandled error:', err)
+    return res.status(500).json({ error: `Unexpected error: ${String(err)}` })
   }
 }
