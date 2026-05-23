@@ -41,13 +41,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Payment service not configured.' })
     }
 
+    // Base URL: test.dodopayments.com for sandbox keys, live.dodopayments.com for production.
+    // Override with DODO_API_URL env var if needed.
+    const dodoBase = process.env.DODO_API_URL ?? 'https://test.dodopayments.com'
+    console.log('Dodo API base:', dodoBase)
+
     // Manual timeout via AbortController (compatible with all Node.js ≥ 14)
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 9000)
 
     let dodoRes: Response
     try {
-      dodoRes = await fetch('https://api.dodopayments.com/payments', {
+      dodoRes = await fetch(`${dodoBase}/payments`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${dodoKey}`,

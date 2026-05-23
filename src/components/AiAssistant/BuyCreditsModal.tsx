@@ -51,9 +51,9 @@ export default function BuyCreditsModal({ onClose }: Props) {
 
       // Parse response defensively — Vercel may return HTML on infrastructure errors
       const text = await res.text()
-      let data: { checkoutUrl?: string; error?: string }
+      let data: { checkoutUrl?: string; error?: string; cause?: string }
       try {
-        data = JSON.parse(text) as { checkoutUrl?: string; error?: string }
+        data = JSON.parse(text) as { checkoutUrl?: string; error?: string; cause?: string }
       } catch {
         throw new Error(`Server error (${res.status}): ${text.slice(0, 120)}`)
       }
@@ -61,7 +61,8 @@ export default function BuyCreditsModal({ onClose }: Props) {
       if (data.checkoutUrl) {
         window.location.href = data.checkoutUrl
       } else {
-        throw new Error(data.error ?? 'No checkout URL returned.')
+        const msg = data.error ?? 'No checkout URL returned.'
+        throw new Error(data.cause ? `${msg} — ${data.cause}` : msg)
       }
     } catch (err) {
       setCheckoutError(err instanceof Error ? err.message : 'Something went wrong.')
