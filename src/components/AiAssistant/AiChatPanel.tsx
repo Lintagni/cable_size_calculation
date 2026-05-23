@@ -12,6 +12,7 @@ import MarkdownMessage from './MarkdownMessage'
 import BuyCreditsModal from './BuyCreditsModal'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { useAiChatStore } from '../../store/aiChatStore'
 
 interface Props {
   currentResult: LvCableResult | null
@@ -221,16 +222,17 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   const { record, consume } = useAiQuotaStore()
   const { modelId } = useAiModelStore()
 
+  // Chat state lives in Zustand — survives navigation to Calculator and back
+  const { msgModels, setMsgModels, pendingFill, setPendingFill } = useAiChatStore()
+
   const quota     = PLAN_MONTHLY_QUOTA[plan]
   const remaining = getRemaining(record, plan)
   const canQuery  = canAfford(record, plan, modelId)
 
-  const [prompt, setPrompt]           = useState('')
-  const [appliedLabel, setAppliedLabel] = useState<string | null>(null)
-  const [msgModels, setMsgModels]     = useState<Record<number, AiModelId>>({})
+  const [prompt, setPrompt]         = useState('')
   const [showBuyModal, setShowBuyModal] = useState(false)
-  const messagesEndRef                = useRef<HTMLDivElement>(null)
-  const textareaRef                   = useRef<HTMLTextAreaElement>(null)
+  const messagesEndRef              = useRef<HTMLDivElement>(null)
+  const textareaRef                 = useRef<HTMLTextAreaElement>(null)
 
   const { messages, streaming, error, send, reset } = useAiChat(currentResult)
   const hasMessages = messages.length > 0
@@ -268,17 +270,8 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setMsgModels(prev => ({ ...prev, [assistantIdx]: modelId }))
 
-    const { fillAction } = await send(text)
-    if (fillAction) {
-      onFillAction(fillAction)
-      const labels: Record<FillAction['action'], string> = {
-        fill_form:   'Switched to LV Cable Sizing',
-        fill_abc:    'Switched to ABC Cable',
-        fill_busbar: 'Switched to Busbar Sizing',
-      }
-      setAppliedLabel(labels[fillAction.action])
-      setTimeout(() => setAppliedLabel(null), 4000)
-    }
+    // send() now stores fillAction in aiChatStore.pendingFill — no auto-navigate
+    await send(text)
   }
 
   function handleKey(e: React.KeyboardEvent) {
@@ -290,7 +283,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`
   }
 
-  function handleReset() { reset(); setMsgModels({}) }
+  function handleReset() { reset(); useAiChatStore.getState().reset() }
 
   // ── Empty / centered state ─────────────────────────────────────────────────
   const [shuffleIdx, setShuffleIdx] = useState(0)
@@ -378,9 +371,6 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
               Enter ↵ to send · Shift+Enter for new line
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {appliedLabel && (
-                <span style={{ fontSize: 11, color: 'var(--ok)', fontWeight: 600 }}>✓ {appliedLabel}</span>
-              )}
               <button
                 onClick={handleSubmit}
                 disabled={!prompt.trim() || streaming || !canQuery}
@@ -549,8 +539,47 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
 
       {showBuyModal && <BuyCreditsModal onClose={() => setShowBuyModal(false)} />}
 
+      {/* ── "Open in Calculator" banner — shown when AI parsed a circuit ── */}
+      {pendingFill && !streaming && (
+        <div style={{ flexShrink: 0, padding: '0 16px 6px', display: 'flex', justifyContent: 'center' }}>
+          <div style={{
+            width: '100%', maxWidth: 640,
+            background: 'color-mix(in oklch, var(--accent) 10%, var(--surface))',
+            border: '1px solid var(--accent-line)',
+            borderRadius: 'var(--r)', padding: '10px 14px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          }}>
+            <span style={{ fontSize: 12, color: 'var(--ink-2)', fontWeight: 500 }}>
+              ✓ Calculator inputs ready — open the calculator to run the calculation
+            </span>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <button
+                onClick={() => setPendingFill(null)}
+                style={{
+                  fontSize: 12, color: 'var(--ink-4)', background: 'none',
+                  border: 'none', cursor: 'pointer', padding: '4px 8px',
+                }}
+              >
+                Dismiss
+              </button>
+              <button
+                onClick={() => { onFillAction(pendingFill); setPendingFill(null) }}
+                style={{
+                  fontSize: 12, fontWeight: 700, padding: '6px 14px',
+                  background: 'var(--accent)', color: 'var(--accent-ink)',
+                  border: 'none', borderRadius: 'var(--r)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                Open in Calculator →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Input — model/credits/new-chat live inside the box */}
-      <div style={{ flexShrink: 0, padding: '8px 16px 16px', display: 'flex', justifyContent: 'center' }}>
+      <div style={{ flexShrink: 0, padding: '0 16px 16px', display: 'flex', justifyContent: 'center' }}>
         <div style={{ width: '100%', maxWidth: 640 }}>
           <div style={{
             background: 'var(--surface)', border: '1px solid var(--line)',
@@ -558,7 +587,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
             opacity: canQuery ? 1 : 0.8,
             boxShadow: '0 4px 24px oklch(0% 0 0 / 0.12)',
           }}>
-            {/* ── Top row: model · credits · applied label · new chat ── */}
+            {/* ── Top row: model · credits · new chat ── */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '8px 12px', borderBottom: '1px solid var(--line)',
@@ -575,9 +604,6 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
                   : <>{remaining}/{quota} cr · {MODEL_CREDIT_WEIGHT[modelId]}cr/msg</>
                 }
               </span>
-              {appliedLabel && (
-                <span style={{ fontSize: 11, color: 'var(--ok)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>✓ {appliedLabel}</span>
-              )}
               <button
                 onClick={handleReset}
                 style={{

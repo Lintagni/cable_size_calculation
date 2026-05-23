@@ -3,6 +3,7 @@ import { anthropic, SYSTEM_PROMPT, buildResultContext, parseExtractedInputs } fr
 import type { FillAction } from './claude'
 import type { LvCableResult } from '../calculators/lvCableSizing'
 import { useAiModelStore } from '../store/aiModelStore'
+import { useAiChatStore } from '../store/aiChatStore'
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -10,10 +11,11 @@ export interface ChatMessage {
 }
 
 export function useAiChat(currentResult: LvCableResult | null) {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const { messages, setMessages } = useAiChatStore()
+  const { setPendingFill }        = useAiChatStore()
   const [streaming, setStreaming] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const { modelId } = useAiModelStore()
+  const [error, setError]         = useState<string | null>(null)
+  const { modelId }               = useAiModelStore()
 
   const send = useCallback(async (userMessage: string): Promise<{ fillAction: FillAction | null }> => {
     const userMsg: ChatMessage = { role: 'user', content: userMessage }
@@ -22,7 +24,7 @@ export function useAiChat(currentResult: LvCableResult | null) {
     setStreaming(true)
     setError(null)
 
-    const ctx = buildResultContext(currentResult)
+    const ctx    = buildResultContext(currentResult)
     const system = ctx ? `${SYSTEM_PROMPT}\n\n---\n${ctx}` : SYSTEM_PROMPT
 
     let fullText = ''
@@ -42,6 +44,8 @@ export function useAiChat(currentResult: LvCableResult | null) {
       }
 
       const fillAction = parseExtractedInputs(fullText)
+      // Store the pending fill so the component can show a button — don't auto-navigate
+      if (fillAction) setPendingFill(fillAction)
       return { fillAction }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Request failed'
@@ -51,12 +55,13 @@ export function useAiChat(currentResult: LvCableResult | null) {
     } finally {
       setStreaming(false)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, currentResult, modelId])
 
   const reset = useCallback(() => {
     setMessages([])
     setError(null)
-  }, [])
+  }, [setMessages])
 
   return { messages, streaming, error, send, reset }
 }
