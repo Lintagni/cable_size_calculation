@@ -252,154 +252,149 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
     return (
       <div className="ai-empty-state">
 
-        {/* ── Scrollable greeting + suggestions ───────────────────────────── */}
-        <div className="ai-empty-content">
-          {/* Eyebrow */}
+        {/* Eyebrow */}
+        <div style={{
+          fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em',
+          textTransform: 'uppercase', color: 'var(--ink-4)',
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
+        }}>
+          <span style={{ width: 24, height: 1, background: 'var(--ink-4)', display: 'inline-block' }} />
+          AI Assistant · Beta
+          <span style={{ width: 24, height: 1, background: 'var(--ink-4)', display: 'inline-block' }} />
+        </div>
+
+        {/* Greeting */}
+        <h1 style={{ fontSize: 'clamp(26px, 7vw, 60px)', fontWeight: 800, color: 'var(--ink)', marginBottom: 10, textAlign: 'center', lineHeight: 1.05 }}>
+          {greeting()}, Engineer.
+        </h1>
+        <p style={{ color: 'var(--ink-3)', marginBottom: 24, textAlign: 'center', fontSize: 15, maxWidth: 480 }}>
+          Describe a circuit in plain English — I'll fill the right calculator automatically.
+        </p>
+
+        {/* ── Input card — centered in the page ─────────────────────────────── */}
+        <div style={{ width: '100%', maxWidth: 640, marginBottom: 20 }}>
           <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em',
-            textTransform: 'uppercase', color: 'var(--ink-4)',
-            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
+            background: 'var(--surface)', border: '1px solid var(--line)',
+            borderRadius: 'var(--r-lg)',
+            opacity: canQuery ? 1 : 0.7,
+            boxShadow: '0 4px 24px oklch(0% 0 0 / 0.12)',
           }}>
-            <span style={{ width: 24, height: 1, background: 'var(--ink-4)', display: 'inline-block' }} />
-            AI Assistant · Beta
-            <span style={{ width: 24, height: 1, background: 'var(--ink-4)', display: 'inline-block' }} />
-          </div>
-
-          {/* Greeting */}
-          <h1 style={{ fontSize: 'clamp(26px, 7vw, 60px)', fontWeight: 800, color: 'var(--ink)', marginBottom: 10, textAlign: 'center', lineHeight: 1.05 }}>
-            {greeting()}, Engineer.
-          </h1>
-          <p style={{ color: 'var(--ink-3)', marginBottom: 32, textAlign: 'center', fontSize: 15, maxWidth: 480 }}>
-            Describe a circuit in plain English — I'll fill the right calculator automatically.
-          </p>
-
-          {/* Suggestions */}
-          <div style={{ width: '100%', maxWidth: 640 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                <span style={{ width: 24, height: 1, background: 'var(--ink-4)', display: 'inline-block' }} />
-                Try asking
-              </div>
-              <button
-                onClick={() => setShuffleIdx(i => i + 1)}
-                style={{ fontSize: 12, color: 'var(--ink-3)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-              >
-                Shuffle
-              </button>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
-              {visibleSuggestions.map((s, i) => (
+            {/* Top row: model pill · credits */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 12px', borderBottom: '1px solid var(--line)',
+            }}>
+              <ModelBadgePill />
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 11,
+                color: !canQuery ? 'var(--fail)' : remaining <= (quota ?? 0) * 0.2 ? '#f59e0b' : 'var(--ink-4)',
+                display: 'flex', alignItems: 'center', gap: 5,
+              }}>
+                {quota === -1
+                  ? '∞ Unlimited'
+                  : <>{remaining}/{quota} cr · {MODEL_CREDIT_WEIGHT[modelId]}cr/msg</>
+                }
+              </span>
+              {quota !== -1 && (
                 <button
-                  key={s.text}
-                  disabled={!canQuery}
-                  onClick={() => {
-                    const full = SUGGESTIONS_FULL[(shuffleIdx % 2 === 0 ? 0 : 3) + i] ?? s.text
-                    setPrompt(full); textareaRef.current?.focus(); autoResize(textareaRef.current!)
-                  }}
+                  onClick={() => setShowBuyModal(true)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px',
-                    background: 'var(--surface)', border: '1px solid var(--line)',
-                    borderRadius: 'var(--r)', cursor: canQuery ? 'pointer' : 'not-allowed',
-                    textAlign: 'left', transition: 'border-color 0.12s',
-                    opacity: canQuery ? 1 : 0.45, overflow: 'hidden',
+                    marginLeft: 'auto', fontSize: 11, fontWeight: 600,
+                    padding: '3px 8px', borderRadius: 6,
+                    background: 'var(--surface-2)', border: '1px solid var(--line)',
+                    cursor: 'pointer', color: 'var(--ink-3)',
                   }}
-                  onMouseEnter={e => { if (canQuery) e.currentTarget.style.borderColor = 'var(--accent)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line)' }}
                 >
-                  <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
-                    textTransform: 'uppercase', letterSpacing: '0.06em',
-                    color: 'var(--accent-ink)', background: 'var(--accent-soft)',
-                    border: '1px solid var(--accent-line)',
-                    borderRadius: 3, padding: '2px 5px', flexShrink: 0, whiteSpace: 'nowrap',
-                  }}>
-                    {s.tag}
-                  </span>
-                  <span style={{
-                    fontSize: 12, color: 'var(--ink-2)', flex: 1,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  }}>
-                    {s.text}
-                  </span>
-                  <span style={{ color: 'var(--ink-4)', fontSize: 12, flexShrink: 0 }}>→</span>
+                  Buy credits
                 </button>
-              ))}
+              )}
+            </div>
+            {/* Textarea + send */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, padding: '10px 12px 12px' }}>
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                value={prompt}
+                onChange={e => { setPrompt(e.target.value); autoResize(e.target) }}
+                onKeyDown={handleKey}
+                disabled={!canQuery}
+                placeholder={canQuery ? 'Describe your circuit, busbar, or overhead ABC run…' : 'Monthly credit quota reached — upgrade to continue'}
+                style={{
+                  flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                  fontSize: 14, color: 'var(--ink)', resize: 'none', lineHeight: 1.6,
+                  minHeight: 24, maxHeight: 160, fontFamily: 'var(--font-sans)',
+                }}
+              />
+              <button
+                onClick={handleSubmit}
+                disabled={!prompt.trim() || streaming || !canQuery}
+                style={{
+                  width: 32, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer',
+                  flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: prompt.trim() && canQuery ? 'var(--ink)' : 'var(--line)',
+                  transition: 'background 0.15s',
+                }}
+              >
+                {streaming
+                  ? <span style={{ width: 6, height: 6, background: 'var(--bg)', borderRadius: '50%' }} />
+                  : <Send size={14} style={{ color: prompt.trim() && canQuery ? 'var(--bg)' : 'var(--ink-4)' }} />
+                }
+              </button>
             </div>
           </div>
         </div>
 
-        {/* ── Input — pinned at bottom (same as chat mode) ─────────────────── */}
-        <div className="ai-chat-input-outer" style={{ flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
-          <div style={{ width: '100%', maxWidth: 640 }}>
-            <div style={{
-              background: 'var(--surface)', border: '1px solid var(--line)',
-              borderRadius: 'var(--r-lg)',
-              opacity: canQuery ? 1 : 0.7,
-              boxShadow: '0 4px 24px oklch(0% 0 0 / 0.12)',
-            }}>
-              {/* Top row: model pill · credits · buy credits */}
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '8px 12px', borderBottom: '1px solid var(--line)',
-              }}>
-                <ModelBadgePill />
-                <span style={{
-                  fontFamily: 'var(--font-mono)', fontSize: 11,
-                  color: !canQuery ? 'var(--fail)' : remaining <= (quota ?? 0) * 0.2 ? '#f59e0b' : 'var(--ink-4)',
-                  display: 'flex', alignItems: 'center', gap: 5,
-                }}>
-                  {quota === -1
-                    ? '∞ Unlimited'
-                    : <>{remaining}/{quota} cr · {MODEL_CREDIT_WEIGHT[modelId]}cr/msg</>
-                  }
-                </span>
-                {quota !== -1 && (
-                  <button
-                    onClick={() => setShowBuyModal(true)}
-                    style={{
-                      marginLeft: 'auto', fontSize: 11, fontWeight: 600,
-                      padding: '3px 8px', borderRadius: 6,
-                      background: 'var(--surface-2)', border: '1px solid var(--line)',
-                      cursor: 'pointer', color: 'var(--ink-3)',
-                    }}
-                  >
-                    Buy credits
-                  </button>
-                )}
-              </div>
-              {/* Textarea + send */}
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, padding: '10px 12px 12px' }}>
-                <textarea
-                  ref={textareaRef}
-                  rows={1}
-                  value={prompt}
-                  onChange={e => { setPrompt(e.target.value); autoResize(e.target) }}
-                  onKeyDown={handleKey}
-                  disabled={!canQuery}
-                  placeholder={canQuery ? 'Describe your circuit, busbar, or overhead ABC run…' : 'Monthly credit quota reached — upgrade to continue'}
-                  style={{
-                    flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                    fontSize: 14, color: 'var(--ink)', resize: 'none', lineHeight: 1.6,
-                    minHeight: 24, maxHeight: 160, fontFamily: 'var(--font-sans)',
-                  }}
-                />
-                <button
-                  onClick={handleSubmit}
-                  disabled={!prompt.trim() || streaming || !canQuery}
-                  style={{
-                    width: 32, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer',
-                    flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: prompt.trim() && canQuery ? 'var(--ink)' : 'var(--line)',
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  {streaming
-                    ? <span style={{ width: 6, height: 6, background: 'var(--bg)', borderRadius: '50%' }} />
-                    : <Send size={14} style={{ color: prompt.trim() && canQuery ? 'var(--bg)' : 'var(--ink-4)' }} />
-                  }
-                </button>
-              </div>
+        {/* Suggestions */}
+        <div style={{ width: '100%', maxWidth: 640 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              <span style={{ width: 24, height: 1, background: 'var(--ink-4)', display: 'inline-block' }} />
+              Try asking
             </div>
+            <button
+              onClick={() => setShuffleIdx(i => i + 1)}
+              style={{ fontSize: 12, color: 'var(--ink-3)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+            >
+              Shuffle
+            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 8 }}>
+            {visibleSuggestions.map((s, i) => (
+              <button
+                key={s.text}
+                disabled={!canQuery}
+                onClick={() => {
+                  const full = SUGGESTIONS_FULL[(shuffleIdx % 2 === 0 ? 0 : 3) + i] ?? s.text
+                  setPrompt(full); textareaRef.current?.focus(); autoResize(textareaRef.current!)
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px',
+                  background: 'var(--surface)', border: '1px solid var(--line)',
+                  borderRadius: 'var(--r)', cursor: canQuery ? 'pointer' : 'not-allowed',
+                  textAlign: 'left', transition: 'border-color 0.12s',
+                  opacity: canQuery ? 1 : 0.45, overflow: 'hidden',
+                }}
+                onMouseEnter={e => { if (canQuery) e.currentTarget.style.borderColor = 'var(--accent)' }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--line)' }}
+              >
+                <span style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 8, fontWeight: 700,
+                  textTransform: 'uppercase', letterSpacing: '0.06em',
+                  color: 'var(--accent-ink)', background: 'var(--accent-soft)',
+                  border: '1px solid var(--accent-line)',
+                  borderRadius: 3, padding: '2px 5px', flexShrink: 0, whiteSpace: 'nowrap',
+                }}>
+                  {s.tag}
+                </span>
+                <span style={{
+                  fontSize: 12, color: 'var(--ink-2)', flex: 1,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {s.text}
+                </span>
+                <span style={{ color: 'var(--ink-4)', fontSize: 12, flexShrink: 0 }}>→</span>
+              </button>
+            ))}
           </div>
         </div>
 

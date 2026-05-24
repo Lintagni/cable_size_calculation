@@ -36,11 +36,13 @@ export default function AiPage() {
       // When keyboard is open, pin page bottom to the keyboard top.
       // When keyboard is closed, restore CSS value (76px above nav).
       page.style.bottom = keyboardH > 100 ? `${keyboardH}px` : ''
-      // Scroll any focused input into view (needed for the empty-state textarea)
+      // Scroll any focused input into view after the layout has updated
       if (keyboardH > 100) {
         const el = document.activeElement
         if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          requestAnimationFrame(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          })
         }
       }
     }
