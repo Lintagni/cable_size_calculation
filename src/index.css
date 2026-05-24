@@ -999,16 +999,13 @@ html, body {
 
 .ai-chat-input-outer { padding: 0 16px 16px; }
 @media (max-width: 720px) {
-  /* On mobile the flex layout is height-constrained to the viewport space
-     above the mobile nav; bottom padding just creates a dead gap. */
-  .ai-chat-input-outer { padding: 0 12px 4px; }
+  .ai-chat-input-outer { padding: 0 12px 0; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
    AI PAGE — full-height layout
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* dvh = dynamic viewport height (shrinks when mobile address bar shows) */
 .ai-page {
   height: calc(100vh - 60px);
   height: calc(100dvh - 60px);
@@ -1016,11 +1013,42 @@ html, body {
   display: flex;
   flex-direction: column;
 }
+
 @media (max-width: 720px) {
+  /* Pin the AI page between the topbar and the mobile nav using position:fixed.
+     This eliminates the height-calculation gap caused by body scroll offsets and
+     dvh unit inaccuracies. JS only adjusts `bottom` when the keyboard opens. */
   .ai-page {
-    /* 56px topbar + 76px body padding (mobile nav clearance) */
-    height: calc(100vh  - 56px - 76px);
-    height: calc(100dvh - 56px - 76px);
+    position: fixed;
+    top: 56px;      /* mobile topbar height */
+    bottom: 76px;   /* above mobile nav pill (58px height + 12px offset + 6px air) */
+    left: 0;
+    right: 0;
+    height: auto;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   AI PAGE — empty state container
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.ai-empty-state {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px 32px;
+  overflow-y: auto;
+}
+
+@media (max-width: 720px) {
+  /* flex-start + top padding approximates centering when content fits,
+     and allows scrollIntoView to work correctly when keyboard is open. */
+  .ai-empty-state {
+    justify-content: flex-start;
+    padding: clamp(20px, 8dvh, 56px) 16px 24px;
   }
 }
 

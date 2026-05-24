@@ -8,23 +8,18 @@ export default function AiPage() {
   const navigate  = useNavigate()
   const setAction = usePendingActionStore(s => s.setAction)
 
-  // On mobile the body has padding-bottom:76px (mobile nav clearance) which
-  // makes it 76px taller than the viewport → page scrolls into the padding.
-  // Also, CSS dvh/vh are inaccurate on Samsung Browser, Firefox, older Chrome
-  // and don't account for the soft keyboard on iOS Safari.
-  // Fix: lock body scroll + set .ai-page height from visualViewport.height
-  // (the only API that reliably reflects keyboard state on all browsers).
+  // On mobile, .ai-page uses position:fixed (top:56px, bottom:76px via CSS).
+  // We only need JS to:
+  //  1. Lock body scroll so the 76px padding-bottom can't be scrolled into
+  //  2. Raise the page bottom when the soft keyboard opens so the input
+  //     stays visible above the keyboard (visualViewport shrinks on keyboard open)
   useEffect(() => {
     if (window.innerWidth > 720) return   // desktop: CSS handles it
 
-    const html  = document.documentElement
-    const body  = document.body
-    const page  = document.querySelector<HTMLElement>('.ai-page')
+    const html = document.documentElement
+    const body = document.body
+    const page = document.querySelector<HTMLElement>('.ai-page')
 
-    // Lock body scroll so the 76px body padding can't be scrolled into.
-    // Also reset scrollTop: body padding-bottom (76px) makes the document
-    // scrollable on first render, and overflow:hidden freezes whatever scroll
-    // offset the browser landed on — resetting to 0 removes the dead gap.
     const prevHtmlOv = html.style.overflow
     const prevBodyOv = body.style.overflow
     html.style.overflow = 'hidden'
@@ -32,25 +27,34 @@ export default function AiPage() {
     document.documentElement.scrollTop = 0
     document.body.scrollTop = 0
 
-    const applyHeight = () => {
+    const onViewportChange = () => {
       if (!page) return
-      const vvpH = window.visualViewport?.height ?? window.innerHeight
-      const topH  = document.querySelector<HTMLElement>('.topbar')?.offsetHeight ?? 56
-      // Fill from below the topbar to the top of the mobile nav (76px clearance)
-      page.style.height = `${vvpH - topH - 76}px`
+      const vvp = window.visualViewport
+      if (!vvp) return
+      // How much of the screen the keyboard occupies
+      const keyboardH = Math.max(0, window.innerHeight - vvp.height - vvp.offsetTop)
+      // When keyboard is open, pin page bottom to the keyboard top.
+      // When keyboard is closed, restore CSS value (76px above nav).
+      page.style.bottom = keyboardH > 100 ? `${keyboardH}px` : ''
+      // Scroll any focused input into view (needed for the empty-state textarea)
+      if (keyboardH > 100) {
+        const el = document.activeElement
+        if (el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+        }
+      }
     }
 
-    applyHeight()
     const vvp = window.visualViewport
-    vvp?.addEventListener('resize',  applyHeight)
-    vvp?.addEventListener('scroll',  applyHeight)
+    vvp?.addEventListener('resize', onViewportChange)
+    vvp?.addEventListener('scroll', onViewportChange)
 
     return () => {
       html.style.overflow = prevHtmlOv
       body.style.overflow = prevBodyOv
-      if (page) page.style.height = ''
-      vvp?.removeEventListener('resize',  applyHeight)
-      vvp?.removeEventListener('scroll',  applyHeight)
+      if (page) page.style.bottom = ''
+      vvp?.removeEventListener('resize', onViewportChange)
+      vvp?.removeEventListener('scroll', onViewportChange)
     }
   }, [])
 

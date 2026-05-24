@@ -329,11 +329,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
 
   if (!hasMessages) {
     return (
-      <div style={{
-        flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', padding: '0 16px 32px',
-        overflowY: 'auto',
-      }}>
+      <div className="ai-empty-state">
         {/* Eyebrow */}
         <div style={{
           fontFamily: 'var(--font-mono)', fontSize: 11, letterSpacing: '0.12em',
