@@ -1032,7 +1032,16 @@ html, body {
    AI PAGE — empty state container
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* Outer wrapper — plain flex column so input bar pins to the bottom */
 .ai-empty-state {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollable greeting + suggestions — fills space above the input bar */
+.ai-empty-content {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -1044,9 +1053,9 @@ html, body {
 }
 
 @media (max-width: 720px) {
-  /* flex-start + top padding approximates centering when content fits,
-     and allows scrollIntoView to work correctly when keyboard is open. */
-  .ai-empty-state {
+  /* flex-start keeps content at the top so the pinned input bar is always
+     visible at the bottom — no scrollIntoView tricks needed. */
+  .ai-empty-content {
     justify-content: flex-start;
     padding: clamp(20px, 8dvh, 56px) 16px 24px;
   }
