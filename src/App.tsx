@@ -14,6 +14,7 @@ import { supabase } from './lib/supabase'
 import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import { loadCableData } from './lib/loadCableData'
+import { usePlanStore } from './store/planStore'
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -45,6 +46,11 @@ export default function App() {
   useEffect(() => {
     loadCableData()
 
+    // Sync global test-mode flag from Supabase on load, then every 60 s
+    const syncTestMode = usePlanStore.getState().syncTestMode
+    syncTestMode()
+    const testModeInterval = setInterval(syncTestMode, 60_000)
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       _setSession(session)
       if (session) loadProfile()
@@ -55,7 +61,10 @@ export default function App() {
       if (session) loadProfile()
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearInterval(testModeInterval)
+      subscription.unsubscribe()
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

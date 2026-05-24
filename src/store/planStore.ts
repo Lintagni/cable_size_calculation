@@ -1,13 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { getGlobalTestMode } from '../lib/globalSettings'
 
 export type Plan = 'free' | 'pro' | 'business'
 
 interface PlanStore {
-  plan:        Plan
-  testMode:    boolean          // admin-only: override everyone to business tier
-  setPlan:     (plan: Plan) => void
-  setTestMode: (on: boolean) => void
+  plan:         Plan
+  testMode:     boolean
+  setPlan:      (plan: Plan) => void
+  setTestMode:  (on: boolean) => void
+  syncTestMode: () => Promise<void>   // fetch global flag from Supabase
 }
 
 // Default 'free'; overridden by Supabase profile on login.
@@ -18,6 +20,10 @@ export const usePlanStore = create<PlanStore>()(
       testMode:    false,
       setPlan:     (plan)     => set({ plan }),
       setTestMode: (testMode) => set({ testMode }),
+      syncTestMode: async () => {
+        const on = await getGlobalTestMode()
+        set({ testMode: on })
+      },
     }),
     { name: 'cablecalc-plan' },
   ),

@@ -51,6 +51,16 @@ export default function Navbar() {
             >
               <n.Icon size={13} />
               {n.label}
+              {n.label === 'AI' && (
+                <span style={{
+                  fontSize: 8, fontWeight: 700, letterSpacing: '0.04em',
+                  color: 'var(--accent-ink)', background: 'var(--accent-soft)',
+                  border: '1px solid var(--accent-line)',
+                  borderRadius: 3, padding: '1px 4px', lineHeight: 1,
+                }}>
+                  BETA
+                </span>
+              )}
             </Link>
           ))}
         </nav>
@@ -107,7 +117,19 @@ export default function Navbar() {
               className={active === n.label ? 'active' : ''}
             >
               <n.Icon size={16} />
-              <span>{n.label}</span>
+              <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                {n.label}
+                {n.label === 'AI' && (
+                  <span style={{
+                    fontSize: 7, fontWeight: 700,
+                    color: 'var(--accent-ink)', background: 'var(--accent-soft)',
+                    border: '1px solid var(--accent-line)',
+                    borderRadius: 2, padding: '1px 3px', lineHeight: 1,
+                  }}>
+                    β
+                  </span>
+                )}
+              </span>
             </Link>
           ))}
         </nav>

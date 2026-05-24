@@ -4,6 +4,7 @@ import { RefreshCw, UserPlus, Trash2, X, Loader2, Upload, Database, ToggleLeft, 
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
 import { usePlanStore } from '../store/planStore'
+import { setGlobalTestMode } from '../lib/globalSettings'
 import { fetchAllExamples, toggleExample, deleteExample } from '../lib/exampleRetrieval'
 import type { ExampleRow } from '../lib/exampleRetrieval'
 
@@ -750,7 +751,7 @@ function FeedbackTab() {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Admin() {
   const { user, session, initialised } = useAuthStore()
-  const { testMode, setTestMode } = usePlanStore()
+  const { testMode, setTestMode, syncTestMode } = usePlanStore()
   const navigate = useNavigate()
   const [tab,        setTab]        = useState<'dashboard' | 'knowledge' | 'feedback'>('dashboard')
   const [profiles,   setProfiles]   = useState<Profile[]>([])
@@ -922,7 +923,12 @@ export default function Admin() {
 
           {/* Toggle switch */}
           <button
-            onClick={() => setTestMode(!testMode)}
+            onClick={async () => {
+              const next = !testMode
+              setTestMode(next)                   // optimistic local update
+              await setGlobalTestMode(next)       // write to Supabase (all users)
+              await syncTestMode()                // confirm round-trip
+            }}
             style={{
               flexShrink: 0, width: 52, height: 28, borderRadius: 14, border: 'none',
               cursor: 'pointer', position: 'relative', transition: 'background 0.2s',

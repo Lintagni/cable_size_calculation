@@ -442,11 +442,16 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
                         content={msg.content.replace(/```json[\s\S]*?```/g, '').trim()}
                         streaming={streaming && i === messages.length - 1}
                       />
-                      {/* Model tag shown after streaming completes */}
+                      {/* Model tag + disclaimer — shown after streaming completes */}
                       {(!streaming || i < messages.length - 1) && msgModels[i] && (
-                        <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-700/50 flex items-center gap-2">
-                          <ResponseModelTag modelId={msgModels[i]} />
-                          <span className="text-[9px] text-gray-400 dark:text-gray-600">BS7671 · NFC 33-209 · IEC 60439</span>
+                        <div className="mt-2.5 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                          <div className="flex items-center gap-2">
+                            <ResponseModelTag modelId={msgModels[i]} />
+                            <span className="text-[9px] text-gray-400 dark:text-gray-600">BS7671 · NFC 33-209 · IEC 60439</span>
+                          </div>
+                          <p style={{ fontSize: 10, color: 'var(--ink-4)', marginTop: 6, fontStyle: 'italic', lineHeight: 1.4 }}>
+                            ⚠ AI Beta — results may contain errors. Always verify critical calculations independently.
+                          </p>
                         </div>
                       )}
                     </>
