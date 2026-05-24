@@ -168,7 +168,8 @@ function ChatRow({ chat, onResume, onRemove }: {
   return (
     <div
       style={{
-        display: 'flex', alignItems: 'center', gap: 0,
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '12px 16px 12px 20px',
         borderBottom: '1px solid var(--line)',
         cursor: 'pointer', transition: 'background 0.12s',
       }}
@@ -177,43 +178,36 @@ function ChatRow({ chat, onResume, onRemove }: {
       onClick={() => onResume(chat)}
     >
       {/* Icon */}
-      <div style={{ padding: '14px 16px 14px 20px', flexShrink: 0 }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center',
-          background: 'color-mix(in oklch, var(--accent) 12%, transparent)',
-          border: '1px solid var(--accent-line)',
-        }}>
-          <Sparkles size={14} style={{ color: 'var(--accent-ink)' }} />
-        </div>
+      <div style={{
+        width: 34, height: 34, borderRadius: 8, display: 'grid', placeItems: 'center', flexShrink: 0,
+        background: 'color-mix(in oklch, var(--accent) 12%, transparent)',
+        border: '1px solid var(--accent-line)',
+      }}>
+        <Sparkles size={14} style={{ color: 'var(--accent-ink)' }} />
       </div>
 
-      {/* Title */}
-      <div style={{ flex: 1, minWidth: 0, padding: '14px 8px' }}>
-        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      {/* Title + meta — takes all remaining space */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {chat.title}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
-          {chat.turnCount} {chat.turnCount === 1 ? 'question' : 'questions'} · {chat.messages.length} messages
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
+            letterSpacing: '0.06em', textTransform: 'uppercase',
+            color: 'var(--accent-ink)', background: 'var(--accent-soft)',
+            border: '1px solid var(--accent-line)', borderRadius: 3, padding: '1px 5px',
+          }}>
+            AI Chat
+          </span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-4)', whiteSpace: 'nowrap' }}>
+            {chat.turnCount}Q · {chat.messages.length} msgs · {timeAgo(chat.timestamp)}
+          </span>
         </div>
       </div>
 
-      {/* Resume badge */}
-      <div style={{ padding: '14px 16px', flexShrink: 0 }}>
-        <span style={{
-          fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
-          letterSpacing: '0.06em', textTransform: 'uppercase',
-          color: 'var(--accent-ink)', background: 'var(--accent-soft)',
-          border: '1px solid var(--accent-line)', borderRadius: 4, padding: '2px 6px',
-        }}>
-          AI Chat
-        </span>
-      </div>
-
-      {/* Updated + actions */}
-      <div style={{ padding: '14px 16px 14px 8px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>
-          {timeAgo(chat.timestamp)}
-        </span>
+      {/* Actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
         <button
           onClick={e => { e.stopPropagation(); onRemove(chat.id) }}
           style={{ color: 'var(--ink-4)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 4, display: 'flex', lineHeight: 1 }}
@@ -223,7 +217,7 @@ function ChatRow({ chat, onResume, onRemove }: {
         >
           <Trash2 size={13} />
         </button>
-        <ChevronRight size={14} style={{ color: 'var(--ink-4)', flexShrink: 0 }} />
+        <ChevronRight size={14} style={{ color: 'var(--ink-4)' }} />
       </div>
     </div>
   )
