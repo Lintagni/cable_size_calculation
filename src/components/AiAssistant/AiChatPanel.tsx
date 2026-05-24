@@ -3,7 +3,7 @@ import { Sparkles, Send, RotateCcw, ArrowUpRight, ChevronDown, Check, Zap, X, Sa
 import clsx from 'clsx'
 import { useAiChat } from '../../lib/useAiChat'
 import type { FillAction } from '../../lib/claude'
-import { usePlanStore } from '../../store/planStore'
+import { useActivePlan } from '../../store/planStore'
 import { useAiQuotaStore, getRemaining, canAfford, PLAN_MONTHLY_QUOTA, MODEL_CREDIT_WEIGHT } from '../../store/aiQuotaStore'
 import { useAiModelStore, AI_MODELS } from '../../store/aiModelStore'
 import type { AiModelId, RealModelId } from '../../store/aiModelStore'
@@ -143,7 +143,7 @@ function ResponseModelTag({ modelId }: { modelId: AiModelId }) {
 
 // ── Main panel ────────────────────────────────────────────────────────────────
 export default function AiChatPanel({ currentResult, onFillAction }: Props) {
-  const { plan } = usePlanStore()
+  const plan = useActivePlan()
   const { record, consume } = useAiQuotaStore()
   const { modelId } = useAiModelStore()
   const { save: saveChat } = useSavedChatStore()

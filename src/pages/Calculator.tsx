@@ -10,7 +10,7 @@ import ShortCircuitForm from '../components/calculator/ShortCircuitForm'
 import MotorCableForm from '../components/calculator/MotorCableForm'
 import AbcCableForm from '../components/calculator/AbcCableForm'
 import BusbarForm from '../components/calculator/BusbarForm'
-import { usePlanStore } from '../store/planStore'
+import { useActivePlan } from '../store/planStore'
 import { useAiQuotaStore, getRemaining, PLAN_MONTHLY_QUOTA } from '../store/aiQuotaStore'
 import { useHistoryStore } from '../store/historyStore'
 import { usePendingActionStore } from '../store/pendingActionStore'
@@ -101,7 +101,7 @@ function MetaField({ label, value, onChange }: { label: string; value: string; o
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function Calculator() {
-  const { plan }           = usePlanStore()
+  const plan               = useActivePlan()
   const { record }         = useAiQuotaStore()
   const { push }           = useHistoryStore()
   const { action: pending, clearAction } = usePendingActionStore()

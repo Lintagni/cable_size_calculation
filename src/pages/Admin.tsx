@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { RefreshCw, UserPlus, Trash2, X, Loader2, Upload, Database, ToggleLeft, ToggleRight, FileSpreadsheet, CheckCircle2, AlertCircle, Star, MessageSquare } from 'lucide-react'
+import { RefreshCw, UserPlus, Trash2, X, Loader2, Upload, Database, ToggleLeft, ToggleRight, FileSpreadsheet, CheckCircle2, AlertCircle, Star, MessageSquare, FlaskConical } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../store/authStore'
+import { usePlanStore } from '../store/planStore'
 import { fetchAllExamples, toggleExample, deleteExample } from '../lib/exampleRetrieval'
 import type { ExampleRow } from '../lib/exampleRetrieval'
 
@@ -749,6 +750,7 @@ function FeedbackTab() {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Admin() {
   const { user, session, initialised } = useAuthStore()
+  const { testMode, setTestMode } = usePlanStore()
   const navigate = useNavigate()
   const [tab,        setTab]        = useState<'dashboard' | 'knowledge' | 'feedback'>('dashboard')
   const [profiles,   setProfiles]   = useState<Profile[]>([])
@@ -893,6 +895,50 @@ export default function Admin() {
             <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fail)' }}><X size={14} /></button>
           </div>
         )}
+
+        {/* ── Test Mode Toggle ──────────────────────────────────────────────── */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+          padding: '14px 20px', borderRadius: 'var(--r)', marginBottom: 24,
+          background: testMode
+            ? 'color-mix(in oklch, #f59e0b 12%, transparent)'
+            : 'var(--surface)',
+          border: `1px solid ${testMode ? '#f59e0b' : 'var(--line)'}`,
+          transition: 'all 0.25s',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <FlaskConical size={18} style={{ color: testMode ? '#f59e0b' : 'var(--ink-4)', flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: testMode ? '#b45309' : 'var(--ink)' }}>
+                Test Mode — {testMode ? 'ON · Business tier for everyone' : 'OFF · Normal tier limits'}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--ink-3)', marginTop: 2 }}>
+                {testMode
+                  ? 'All calculator tabs unlocked · 2000 AI credits · only affects this browser'
+                  : 'Flip ON to test the full app as a Business user (this browser only)'}
+              </div>
+            </div>
+          </div>
+
+          {/* Toggle switch */}
+          <button
+            onClick={() => setTestMode(!testMode)}
+            style={{
+              flexShrink: 0, width: 52, height: 28, borderRadius: 14, border: 'none',
+              cursor: 'pointer', position: 'relative', transition: 'background 0.2s',
+              background: testMode ? '#f59e0b' : 'var(--line-2)',
+              padding: 0,
+            }}
+            title={testMode ? 'Turn off test mode' : 'Turn on test mode'}
+          >
+            <span style={{
+              position: 'absolute', top: 3, left: testMode ? 27 : 3,
+              width: 22, height: 22, borderRadius: '50%', background: '#fff',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+              transition: 'left 0.2s', display: 'block',
+            }} />
+          </button>
+        </div>
 
         {loading ? (
           <div style={{ textAlign: 'center', color: 'var(--ink-3)', padding: 60 }}>Loading…</div>
