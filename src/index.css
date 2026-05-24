@@ -1000,6 +1000,8 @@ html, body {
 .ai-chat-input-outer { padding: 0 16px 16px; }
 @media (max-width: 720px) {
   .ai-chat-input-outer { padding: 0 12px 0; }
+  /* Hide text labels in chat bar buttons — show icons only */
+  .ai-save-label { display: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════

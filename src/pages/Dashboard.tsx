@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Download, Plus, Search, ChevronRight, Trash2 } from 'lucide-react'
+import { Download, Plus, Search, ChevronRight, Trash2, Sparkles, MessageSquare, Calculator } from 'lucide-react'
 import { useHistoryStore, type HistoryEntry, type CalcType } from '../store/historyStore'
+import { useSavedChatStore, type SavedChat } from '../store/savedChatStore'
+import { useAiChatStore } from '../store/aiChatStore'
 
 // ── Type metadata ──────────────────────────────────────────────────────────────
 const TYPE_META: Record<CalcType, { label: string; color: string }> = {
@@ -157,13 +159,92 @@ function HistoryRow({ entry, onRestore, onRemove }: {
   )
 }
 
+// ── Chat history row ───────────────────────────────────────────────────────────
+function ChatRow({ chat, onResume, onRemove }: {
+  chat: SavedChat
+  onResume: (c: SavedChat) => void
+  onRemove: (id: string) => void
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex', alignItems: 'center', gap: 0,
+        borderBottom: '1px solid var(--line)',
+        cursor: 'pointer', transition: 'background 0.12s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
+      onMouseLeave={e => (e.currentTarget.style.background = '')}
+      onClick={() => onResume(chat)}
+    >
+      {/* Icon */}
+      <div style={{ padding: '14px 16px 14px 20px', flexShrink: 0 }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: 8, display: 'grid', placeItems: 'center',
+          background: 'color-mix(in oklch, var(--accent) 12%, transparent)',
+          border: '1px solid var(--accent-line)',
+        }}>
+          <Sparkles size={14} style={{ color: 'var(--accent-ink)' }} />
+        </div>
+      </div>
+
+      {/* Title */}
+      <div style={{ flex: 1, minWidth: 0, padding: '14px 8px' }}>
+        <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {chat.title}
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--ink-3)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
+          {chat.turnCount} {chat.turnCount === 1 ? 'question' : 'questions'} · {chat.messages.length} messages
+        </div>
+      </div>
+
+      {/* Resume badge */}
+      <div style={{ padding: '14px 16px', flexShrink: 0 }}>
+        <span style={{
+          fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
+          letterSpacing: '0.06em', textTransform: 'uppercase',
+          color: 'var(--accent-ink)', background: 'var(--accent-soft)',
+          border: '1px solid var(--accent-line)', borderRadius: 4, padding: '2px 6px',
+        }}>
+          AI Chat
+        </span>
+      </div>
+
+      {/* Updated + actions */}
+      <div style={{ padding: '14px 16px 14px 8px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>
+          {timeAgo(chat.timestamp)}
+        </span>
+        <button
+          onClick={e => { e.stopPropagation(); onRemove(chat.id) }}
+          style={{ color: 'var(--ink-4)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 4, display: 'flex', lineHeight: 1 }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--fail)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-4)')}
+          title="Delete"
+        >
+          <Trash2 size={13} />
+        </button>
+        <ChevronRight size={14} style={{ color: 'var(--ink-4)', flexShrink: 0 }} />
+      </div>
+    </div>
+  )
+}
+
 // ── Main page ──────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate()
   const { entries, remove, clear } = useHistoryStore()
+  const { chats, remove: removeChat, clear: clearChats } = useSavedChatStore()
 
+  const [tab, setTab]         = useState<'calc' | 'ai'>('calc')
   const [search, setSearch]   = useState('')
   const [filter, setFilter]   = useState<CalcType | 'all'>('all')
+
+  function handleResumeChat(chat: SavedChat) {
+    const store = useAiChatStore.getState()
+    store.setMessages(chat.messages)
+    store.setMsgModels(() => chat.msgModels)
+    navigate('/ai')
+  }
 
   const filtered = useMemo(() => {
     let list = entries
@@ -189,127 +270,185 @@ export default function Dashboard() {
       <div className="container" style={{ paddingTop: 40 }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
           <div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 24, height: 1, background: 'var(--ink-4)', display: 'inline-block' }} />
               Workspace
             </div>
-            <h1 style={{ fontSize: 32, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.1 }}>
-              Calculation history
-            </h1>
+            <h1 style={{ fontSize: 32, fontWeight: 700, color: 'var(--ink)', lineHeight: 1.1 }}>History</h1>
             <p style={{ color: 'var(--ink-3)', marginTop: 8, fontSize: 14 }}>
-              {entries.length} saved calculation{entries.length !== 1 ? 's' : ''} · stored locally and synced
+              {entries.length} calculation{entries.length !== 1 ? 's' : ''} · {chats.length} saved chat{chats.length !== 1 ? 's' : ''}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn" style={{ gap: 6 }} onClick={() => alert('PDF export coming soon')}>
-              <Download size={14} /> Export all
-            </button>
-            <Link to="/calculator" className="btn btn-accent btn-lg" style={{ gap: 6 }}>
-              <Plus size={14} /> New calculation
-            </Link>
-          </div>
-        </div>
-
-        {/* Search + filters */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-          <div style={{
-            flex: 1, minWidth: 260, display: 'flex', alignItems: 'center', gap: 10,
-            background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r)',
-            padding: '0 14px',
-          }}>
-            <Search size={14} style={{ color: 'var(--ink-4)', flexShrink: 0 }} />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search project, circuit, designer…"
-              style={{
-                background: 'none', border: 'none', outline: 'none',
-                fontSize: 13, color: 'var(--ink)', width: '100%', padding: '10px 0',
-              }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {FILTER_TYPES.map(f => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                style={{
-                  fontSize: 12, fontWeight: 500, padding: '6px 12px',
-                  borderRadius: 'var(--r)', border: '1px solid',
-                  cursor: 'pointer', transition: 'all 0.12s',
-                  borderColor: filter === f.key ? 'var(--accent)' : 'var(--line)',
-                  background: filter === f.key ? 'var(--accent-soft)' : 'var(--surface)',
-                  color: filter === f.key ? 'var(--accent-ink)' : 'var(--ink-3)',
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
-            {entries.length > 0 && (
-              <button
-                onClick={() => { if (confirm('Clear all history?')) clear() }}
-                style={{
-                  fontSize: 12, padding: '6px 12px',
-                  borderRadius: 'var(--r)', border: '1px solid var(--line)',
-                  background: 'none', color: 'var(--fail)', cursor: 'pointer',
-                }}
-              >
-                Clear all
-              </button>
+            {tab === 'calc' ? (
+              <>
+                <button className="btn" style={{ gap: 6 }} onClick={() => alert('PDF export coming soon')}>
+                  <Download size={14} /> Export all
+                </button>
+                <Link to="/calculator" className="btn btn-accent btn-lg" style={{ gap: 6 }}>
+                  <Plus size={14} /> New calculation
+                </Link>
+              </>
+            ) : (
+              <Link to="/ai" className="btn btn-accent btn-lg" style={{ gap: 6 }}>
+                <Sparkles size={14} /> New chat
+              </Link>
             )}
           </div>
         </div>
 
-        {/* Table */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
-          {/* Header row */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '2.5fr 1fr 1.5fr 1fr 1fr auto',
-            borderBottom: '1px solid var(--line)',
-            padding: '0',
-          }}>
-            {['Project · Circuit', 'Type', 'Cable', 'Ib / VD', 'Status', 'Updated'].map((h, i) => (
-              <div key={h} style={{
-                padding: '10px 16px', fontFamily: 'var(--font-mono)', fontSize: 10,
-                color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600,
-                paddingLeft: i === 0 ? 20 : 16,
+        {/* Tab switcher */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--surface-2)', border: '1px solid var(--line)', borderRadius: 'var(--r)', padding: 4, width: 'fit-content' }}>
+          {([
+            { key: 'calc', label: 'Calculations', Icon: Calculator },
+            { key: 'ai',   label: 'AI Chats',     Icon: MessageSquare },
+          ] as const).map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                fontSize: 13, fontWeight: 500, padding: '7px 16px', borderRadius: 6,
+                border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                background: tab === t.key ? 'var(--surface)' : 'transparent',
+                color: tab === t.key ? 'var(--ink)' : 'var(--ink-3)',
+                boxShadow: tab === t.key ? 'var(--shadow-card)' : 'none',
+              }}
+            >
+              <t.Icon size={14} />
+              {t.label}
+              <span style={{
+                fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700,
+                padding: '1px 5px', borderRadius: 4,
+                background: tab === t.key ? 'var(--accent-soft)' : 'var(--line)',
+                color: tab === t.key ? 'var(--accent-ink)' : 'var(--ink-4)',
               }}>
-                {h}
-              </div>
-            ))}
-          </div>
-
-          {filtered.length === 0 ? (
-            <div style={{ padding: '60px 24px', textAlign: 'center' }}>
-              <div style={{ fontSize: 14, color: 'var(--ink-3)', marginBottom: 12 }}>
-                {entries.length === 0
-                  ? 'No calculations yet — run one in the calculator.'
-                  : 'No results match your search.'}
-              </div>
-              {entries.length === 0 && (
-                <Link to="/calculator" className="btn btn-accent">
-                  Open calculator
-                </Link>
-              )}
-            </div>
-          ) : (
-            filtered.map(entry => (
-              <HistoryRow
-                key={entry.id}
-                entry={entry}
-                onRestore={handleRestore}
-                onRemove={remove}
-              />
-            ))
-          )}
+                {t.key === 'calc' ? entries.length : chats.length}
+              </span>
+            </button>
+          ))}
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-4)' }}>
-          {filtered.length} of {entries.length} entries · stored in browser · sign in to sync
-        </p>
+        {/* ── Calculations tab ── */}
+        {tab === 'calc' && (
+          <>
+            {/* Search + filters */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+              <div style={{
+                flex: 1, minWidth: 260, display: 'flex', alignItems: 'center', gap: 10,
+                background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r)',
+                padding: '0 14px',
+              }}>
+                <Search size={14} style={{ color: 'var(--ink-4)', flexShrink: 0 }} />
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search project, circuit, designer…"
+                  style={{
+                    background: 'none', border: 'none', outline: 'none',
+                    fontSize: 13, color: 'var(--ink)', width: '100%', padding: '10px 0',
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {FILTER_TYPES.map(f => (
+                  <button
+                    key={f.key}
+                    onClick={() => setFilter(f.key)}
+                    style={{
+                      fontSize: 12, fontWeight: 500, padding: '6px 12px',
+                      borderRadius: 'var(--r)', border: '1px solid',
+                      cursor: 'pointer', transition: 'all 0.12s',
+                      borderColor: filter === f.key ? 'var(--accent)' : 'var(--line)',
+                      background: filter === f.key ? 'var(--accent-soft)' : 'var(--surface)',
+                      color: filter === f.key ? 'var(--accent-ink)' : 'var(--ink-3)',
+                    }}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+                {entries.length > 0 && (
+                  <button
+                    onClick={() => { if (confirm('Clear all history?')) clear() }}
+                    style={{ fontSize: 12, padding: '6px 12px', borderRadius: 'var(--r)', border: '1px solid var(--line)', background: 'none', color: 'var(--fail)', cursor: 'pointer' }}
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Table */}
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '2.5fr 1fr 1.5fr 1fr 1fr auto', borderBottom: '1px solid var(--line)' }}>
+                {['Project · Circuit', 'Type', 'Cable', 'Ib / VD', 'Status', 'Updated'].map((h, i) => (
+                  <div key={h} style={{ padding: '10px 16px', fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600, paddingLeft: i === 0 ? 20 : 16 }}>
+                    {h}
+                  </div>
+                ))}
+              </div>
+              {filtered.length === 0 ? (
+                <div style={{ padding: '60px 24px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 14, color: 'var(--ink-3)', marginBottom: 12 }}>
+                    {entries.length === 0 ? 'No calculations yet — run one in the calculator.' : 'No results match your search.'}
+                  </div>
+                  {entries.length === 0 && <Link to="/calculator" className="btn btn-accent">Open calculator</Link>}
+                </div>
+              ) : (
+                filtered.map(entry => (
+                  <HistoryRow key={entry.id} entry={entry} onRestore={handleRestore} onRemove={remove} />
+                ))
+              )}
+            </div>
+            <p style={{ textAlign: 'center', marginTop: 20, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-4)' }}>
+              {filtered.length} of {entries.length} entries · stored in browser
+            </p>
+          </>
+        )}
+
+        {/* ── AI Chats tab ── */}
+        {tab === 'ai' && (
+          <>
+            {chats.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+                <button
+                  onClick={() => { if (confirm('Delete all saved chats?')) clearChats() }}
+                  style={{ fontSize: 12, padding: '6px 12px', borderRadius: 'var(--r)', border: '1px solid var(--line)', background: 'none', color: 'var(--fail)', cursor: 'pointer' }}
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
+
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--r)', overflow: 'hidden' }}>
+              {chats.length === 0 ? (
+                <div style={{ padding: '60px 24px', textAlign: 'center' }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'grid', placeItems: 'center', margin: '0 auto 16px' }}>
+                    <Sparkles size={20} style={{ color: 'var(--ink-4)' }} />
+                  </div>
+                  <div style={{ fontSize: 14, color: 'var(--ink-3)', marginBottom: 12 }}>
+                    No saved chats yet — use the <strong>Save</strong> button in the AI chat bar to save a conversation.
+                  </div>
+                  <Link to="/ai" className="btn btn-accent" style={{ gap: 6 }}>
+                    <Sparkles size={14} /> Open AI chat
+                  </Link>
+                </div>
+              ) : (
+                chats.map(chat => (
+                  <ChatRow key={chat.id} chat={chat} onResume={handleResumeChat} onRemove={removeChat} />
+                ))
+              )}
+            </div>
+            {chats.length > 0 && (
+              <p style={{ textAlign: 'center', marginTop: 20, fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--ink-4)' }}>
+                {chats.length} saved chat{chats.length !== 1 ? 's' : ''} · click any row to resume · stored in browser
+              </p>
+            )}
+          </>
+        )}
+
       </div>
     </div>
   )

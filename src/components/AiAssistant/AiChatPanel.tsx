@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Sparkles, Send, RotateCcw, ArrowUpRight, ChevronDown, Check, Zap, X } from 'lucide-react'
+import { Sparkles, Send, RotateCcw, ArrowUpRight, ChevronDown, Check, Zap, X, Save } from 'lucide-react'
 import clsx from 'clsx'
 import { useAiChat } from '../../lib/useAiChat'
 import type { FillAction } from '../../lib/claude'
@@ -14,6 +14,7 @@ import CalcResultCard from './CalcResultCard'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAiChatStore } from '../../store/aiChatStore'
+import { useSavedChatStore } from '../../store/savedChatStore'
 import { routeQuery } from '../../lib/complexityRouter'
 
 interface Props {
@@ -145,6 +146,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   const { plan } = usePlanStore()
   const { record, consume } = useAiQuotaStore()
   const { modelId } = useAiModelStore()
+  const { save: saveChat } = useSavedChatStore()
 
   // Chat state lives in Zustand — survives navigation to Calculator and back
   const { msgModels, setMsgModels, calcResults, pendingFill, setPendingFill } = useAiChatStore()
@@ -155,6 +157,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   const [prompt, setPrompt]               = useState('')
   const [showBuyModal, setShowBuyModal]   = useState(false)
   const [bannerDismissed, setBannerDismissed] = useState(false)
+  const [justSaved, setJustSaved]         = useState(false)
   const messagesEndRef                  = useRef<HTMLDivElement>(null)
   const textareaRef                     = useRef<HTMLTextAreaElement>(null)
   const prevMsgCountRef                 = useRef(0)
@@ -243,6 +246,13 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   }
 
   function handleReset() { reset(); useAiChatStore.getState().reset() }
+
+  function handleSave() {
+    if (!messages.length) return
+    saveChat(messages, msgModels)
+    setJustSaved(true)
+    setTimeout(() => setJustSaved(false), 2000)
+  }
 
   // ── Empty / centered state ─────────────────────────────────────────────────
   const [shuffleIdx, setShuffleIdx] = useState(0)
@@ -544,10 +554,30 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
                     : <>{remaining}/{quota} cr · {MODEL_CREDIT_WEIGHT[modelId]}cr/msg</>
                 }
               </span>
+              {/* Save chat button */}
+              <button
+                onClick={handleSave}
+                disabled={!hasMessages || streaming}
+                title="Save this chat to history"
+                style={{
+                  marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5,
+                  fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono)',
+                  color: justSaved ? 'var(--ok)' : 'var(--ink-4)', background: 'none',
+                  border: `1px solid ${justSaved ? 'var(--ok)' : 'var(--line)'}`, borderRadius: 6,
+                  padding: '3px 8px', cursor: 'pointer', transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { if (!justSaved) e.currentTarget.style.color = 'var(--ink)' }}
+                onMouseLeave={e => { if (!justSaved) e.currentTarget.style.color = 'var(--ink-4)' }}
+              >
+                <Save size={11} />
+                <span className="ai-save-label">{justSaved ? 'Saved!' : 'Save'}</span>
+              </button>
+
+              {/* New chat button */}
               <button
                 onClick={handleReset}
                 style={{
-                  marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5,
+                  display: 'flex', alignItems: 'center', gap: 5,
                   fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-mono)',
                   color: 'var(--ink-4)', background: 'none',
                   border: '1px solid var(--line)', borderRadius: 6,
@@ -556,7 +586,8 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-4)')}
               >
-                <RotateCcw size={11} /> New chat
+                <RotateCcw size={11} />
+                <span className="ai-save-label">New chat</span>
               </button>
             </div>
 
