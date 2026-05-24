@@ -21,11 +21,16 @@ export default function AiPage() {
     const body  = document.body
     const page  = document.querySelector<HTMLElement>('.ai-page')
 
-    // Lock body scroll so the 76px body padding can't be scrolled into
+    // Lock body scroll so the 76px body padding can't be scrolled into.
+    // Also reset scrollTop: body padding-bottom (76px) makes the document
+    // scrollable on first render, and overflow:hidden freezes whatever scroll
+    // offset the browser landed on — resetting to 0 removes the dead gap.
     const prevHtmlOv = html.style.overflow
     const prevBodyOv = body.style.overflow
     html.style.overflow = 'hidden'
     body.style.overflow = 'hidden'
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
 
     const applyHeight = () => {
       if (!page) return

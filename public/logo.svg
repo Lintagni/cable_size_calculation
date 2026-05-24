@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="#1a1625"/>
+  <!-- Amber accent bar at bottom of card -->
+  <rect x="0" y="472" width="512" height="40" rx="0" fill="#e09b20"/>
+  <rect x="0" y="472" width="512" height="40" rx="96" fill="#e09b20"/>
+  <rect x="0" y="472" width="512" height="20" fill="#e09b20"/>
+  <!-- CC monogram -->
+  <text x="256" y="290" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="220" text-anchor="middle" fill="#f5f0e8" letter-spacing="-12">CC</text>
+  <!-- Small tagline -->
+  <text x="256" y="360" font-family="ui-monospace,monospace" font-weight="500" font-size="38" text-anchor="middle" fill="#e09b20" letter-spacing="6">BS7671</text>
+</svg>

@@ -994,6 +994,17 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+   AI CHAT — input bar
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.ai-chat-input-outer { padding: 0 16px 16px; }
+@media (max-width: 720px) {
+  /* On mobile the flex layout is height-constrained to the viewport space
+     above the mobile nav; bottom padding just creates a dead gap. */
+  .ai-chat-input-outer { padding: 0 12px 4px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
    AI PAGE — full-height layout
    ═══════════════════════════════════════════════════════════════════════ */
 

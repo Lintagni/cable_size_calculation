@@ -144,7 +144,7 @@ export default function BuyCreditsModal({ onClose }: Props) {
                     position: 'absolute', top: -10, left: 10,
                     fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
                     padding: '2px 8px', borderRadius: 20,
-                    background: 'var(--accent)', color: 'var(--accent-fg)',
+                    background: 'var(--accent)', color: 'var(--accent-ink)',
                     letterSpacing: '0.06em', textTransform: 'uppercase',
                   }}>
                     Best value
@@ -212,7 +212,7 @@ export default function BuyCreditsModal({ onClose }: Props) {
               padding: '12px', borderRadius: 10, border: 'none',
               fontSize: 13, fontWeight: 700, cursor: (!selected || purchasing) ? 'not-allowed' : 'pointer',
               background: (selected && !purchasing) ? 'var(--accent)' : 'var(--surface-2)',
-              color: (selected && !purchasing) ? 'var(--accent-fg)' : 'var(--ink-4)',
+              color: (selected && !purchasing) ? 'var(--accent-ink)' : 'var(--ink-4)',
               transition: 'all 0.15s',
             }}
           >

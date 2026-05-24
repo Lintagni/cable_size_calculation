@@ -9,6 +9,7 @@ import Pricing from './pages/Pricing'
 import Admin from './pages/Admin'
 import PaymentSuccess from './pages/PaymentSuccess'
 import FeedbackWidget from './components/FeedbackWidget'
+import PwaInstallPrompt from './components/PwaInstallPrompt'
 import { supabase } from './lib/supabase'
 import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/auth/ProtectedRoute'
@@ -76,6 +77,7 @@ export default function App() {
         <Route path="/payment-success" element={<PaymentSuccess />} />
       </Routes>
       <FeedbackGate />
+      <PwaInstallPrompt />
     </>
   )
 }

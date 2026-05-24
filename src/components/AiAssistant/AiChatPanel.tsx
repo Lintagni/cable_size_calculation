@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Sparkles, Send, RotateCcw, ArrowUpRight, ChevronDown, Check, Zap } from 'lucide-react'
+import { Sparkles, Send, RotateCcw, ArrowUpRight, ChevronDown, Check, Zap, X } from 'lucide-react'
 import clsx from 'clsx'
 import { useAiChat } from '../../lib/useAiChat'
 import type { FillAction } from '../../lib/claude'
@@ -231,8 +231,9 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
   const quota     = PLAN_MONTHLY_QUOTA[plan]
   const remaining = getRemaining(record, plan)
 
-  const [prompt, setPrompt]             = useState('')
-  const [showBuyModal, setShowBuyModal] = useState(false)
+  const [prompt, setPrompt]               = useState('')
+  const [showBuyModal, setShowBuyModal]   = useState(false)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
   const messagesEndRef                  = useRef<HTMLDivElement>(null)
   const textareaRef                     = useRef<HTMLTextAreaElement>(null)
   const prevMsgCountRef                 = useRef(0)
@@ -555,7 +556,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
       </div>
 
       {/* Quota exhausted banner */}
-      {!canQuery && (
+      {!canQuery && !bannerDismissed && (
         <div className="flex-shrink-0 px-4 pb-2">
           <div className="bg-gray-800/80 border border-gray-700 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
             <div>
@@ -583,6 +584,13 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
                   Upgrade <ArrowUpRight className="w-3 h-3" />
                 </Link>
               )}
+              <button
+                onClick={() => setBannerDismissed(true)}
+                className="p-1.5 text-gray-500 hover:text-gray-300 transition-colors rounded-md hover:bg-gray-700/50"
+                aria-label="Dismiss"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         </div>
@@ -591,7 +599,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
       {showBuyModal && <BuyCreditsModal onClose={() => setShowBuyModal(false)} />}
 
       {/* Input — model/credits/new-chat live inside the box */}
-      <div style={{ flexShrink: 0, padding: '0 16px 16px', display: 'flex', justifyContent: 'center' }}>
+      <div className="ai-chat-input-outer" style={{ flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
         <div style={{ width: '100%', maxWidth: 640 }}>
           <div style={{
             background: 'var(--surface)', border: '1px solid var(--line)',
