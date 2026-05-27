@@ -50,7 +50,7 @@ const MODEL_DOT: Record<AiModelId, string> = {
   'claude-opus-4-5':   'bg-amber-400',
   'claude-sonnet-4-6': 'bg-violet-400',
   'claude-haiku-4-5':  'bg-sky-400',
-  'gemini-2.0-flash':  'bg-blue-400',
+  'gemini-2.5-flash':  'bg-blue-400',
 }
 
 // ── Compact pill for chat input toolbar ───────────────────────────────────────
@@ -234,7 +234,7 @@ export default function AiChatPanel({ currentResult }: Props) {
 
     const { provider } = await send(text, effectiveModel)
     if (provider === 'gemini') {
-      setMsgModels(prev => ({ ...prev, [assistantIdx]: 'gemini-2.0-flash' }))
+      setMsgModels(prev => ({ ...prev, [assistantIdx]: 'gemini-2.5-flash' }))
     }
   }
 

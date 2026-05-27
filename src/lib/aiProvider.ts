@@ -24,10 +24,8 @@ function isQuotaError(e: unknown): boolean {
 const BOTH_EXHAUSTED =
   'AI service temporarily unavailable — Claude credits are exhausted and the Gemini fallback has hit its quota. Please top up Claude credits or enable billing on your Gemini API project.'
 
-function toGeminiModel(claudeModel: string): string {
-  // Use Flash for Haiku-class (cheap/fast), Flash for Sonnet-class as fallback
-  if (claudeModel.includes('haiku')) return 'gemini-2.0-flash'
-  return 'gemini-2.0-flash'
+function toGeminiModel(_claudeModel: string): string {
+  return 'gemini-2.5-flash'
 }
 
 export interface StreamParams {
