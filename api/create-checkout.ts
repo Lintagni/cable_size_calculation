@@ -76,6 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           ...(customer ? { customer } : {}),
           product_id:   productId,
           quantity:     1,
+          billing:      { city: 'N/A', country: 'US', state: 'N/A', street: 'N/A', zipcode: '00000' },
           payment_link: true,
           return_url:   `${siteUrl}/payment-success`,
           metadata: {
