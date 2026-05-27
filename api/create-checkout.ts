@@ -75,6 +75,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Dodo subscription body: product_id at top level, no billing/product_cart
           ...(customer ? { customer } : {}),
           product_id:   productId,
+          quantity:     1,
           payment_link: true,
           return_url:   `${siteUrl}/payment-success`,
           metadata: {
