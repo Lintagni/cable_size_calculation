@@ -75,7 +75,7 @@ export function useAiChat(currentResult: LvCableResult | null) {
   const send = useCallback(async (
     userMessage:    string,
     effectiveModel: RealModelId,
-  ): Promise<{ fillAction: FillAction | null }> => {
+  ): Promise<{ fillAction: FillAction | null; provider: 'claude' | 'gemini' }> => {
 
     const userMsg: ChatMessage    = { role: 'user', content: userMessage }
     const nextMessages            = [...messages, userMsg]
@@ -139,18 +139,22 @@ export function useAiChat(currentResult: LvCableResult | null) {
 
     // ── 4. Stream explanation based on actual results ─────────────────────────
     let fullText = ''
+    let provider: 'claude' | 'gemini' = 'claude'
     try {
-      for await (const chunk of streamAiResponse({
-        model:      effectiveModel,
-        max_tokens: 1024,
-        system,
-        messages:   nextMessages.map(m => ({ role: m.role, content: m.content })),
-      })) {
+      for await (const chunk of streamAiResponse(
+        {
+          model:      effectiveModel,
+          max_tokens: 1024,
+          system,
+          messages:   nextMessages.map(m => ({ role: m.role, content: m.content })),
+        },
+        () => { provider = 'gemini' },
+      )) {
         fullText += chunk
         setMessages([...nextMessages, { role: 'assistant', content: fullText }])
       }
 
-      // Fallback: if Haiku extraction failed, try parsing Claude's own response
+      // Fallback: if Haiku extraction failed, try parsing the AI's own response
       if (!fillAction) {
         const fallbackAction = parseExtractedInputs(fullText)
         if (fallbackAction) {
@@ -163,12 +167,12 @@ export function useAiChat(currentResult: LvCableResult | null) {
         }
       }
 
-      return { fillAction }
+      return { fillAction, provider }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Request failed'
       setError(msg)
       setMessages(nextMessages)
-      return { fillAction: null }
+      return { fillAction: null, provider: 'claude' }
     } finally {
       setStreaming(false)
     }

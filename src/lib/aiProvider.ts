@@ -33,8 +33,12 @@ export interface StreamParams {
 /**
  * Streams text chunks from Claude. Falls back to Gemini automatically
  * when Claude returns a "credit balance too low" error.
+ * Calls onFallback() before the first Gemini chunk so callers can update UI.
  */
-export async function* streamAiResponse(params: StreamParams): AsyncGenerator<string> {
+export async function* streamAiResponse(
+  params: StreamParams,
+  onFallback?: () => void,
+): AsyncGenerator<string> {
   // ── Try Claude ───────────────────────────────────────────────────────────────
   try {
     const stream = anthropic.messages.stream({
@@ -53,6 +57,7 @@ export async function* streamAiResponse(params: StreamParams): AsyncGenerator<st
   } catch (e) {
     if (!isQuotaError(e)) throw e
     console.warn('[AI] Claude quota exhausted — falling back to Gemini')
+    onFallback?.()
   }
 
   // ── Gemini fallback ──────────────────────────────────────────────────────────

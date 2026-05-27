@@ -31,6 +31,7 @@ export const MODEL_CREDIT_WEIGHT: Record<AiModelId, number> = {
   'claude-haiku-4-5':  1,
   'claude-sonnet-4-6': 2,
   'claude-opus-4-5':   5,
+  'gemini-2.0-flash':  1,   // fallback-only — credits already charged as the Claude model
 }
 
 // ── Credit top-up packs (shown in BuyCreditsModal) ───────────────────────────

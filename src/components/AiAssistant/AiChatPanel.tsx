@@ -4,7 +4,7 @@ import clsx from 'clsx'
 import { useAiChat } from '../../lib/useAiChat'
 import { useActivePlan } from '../../store/planStore'
 import { useAiQuotaStore, getRemaining, canAfford, PLAN_MONTHLY_QUOTA, MODEL_CREDIT_WEIGHT } from '../../store/aiQuotaStore'
-import { useAiModelStore, AI_MODELS } from '../../store/aiModelStore'
+import { useAiModelStore, AI_MODELS, SELECTABLE_MODEL_IDS } from '../../store/aiModelStore'
 import type { AiModelId, RealModelId } from '../../store/aiModelStore'
 import type { LvCableResult } from '../../calculators/lvCableSizing'
 import MarkdownMessage from './MarkdownMessage'
@@ -50,6 +50,7 @@ const MODEL_DOT: Record<AiModelId, string> = {
   'claude-opus-4-5':   'bg-amber-400',
   'claude-sonnet-4-6': 'bg-violet-400',
   'claude-haiku-4-5':  'bg-sky-400',
+  'gemini-2.0-flash':  'bg-blue-400',
 }
 
 // ── Compact pill for chat input toolbar ───────────────────────────────────────
@@ -96,7 +97,7 @@ function ModelBadgePill() {
           width: 220, borderRadius: 12, border: '1px solid var(--line)',
           background: 'var(--surface)', boxShadow: 'var(--shadow-pop)', overflow: 'hidden',
         }}>
-          {AI_MODELS.map(m => (
+          {AI_MODELS.filter(m => SELECTABLE_MODEL_IDS.includes(m.id)).map(m => (
             <button
               key={m.id}
               onClick={() => { setModel(m.id as AiModelId); setOpen(false) }}
@@ -231,7 +232,10 @@ export default function AiChatPanel({ currentResult }: Props) {
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     setMsgModels(prev => ({ ...prev, [assistantIdx]: effectiveModel }))
 
-    await send(text, effectiveModel)
+    const { provider } = await send(text, effectiveModel)
+    if (provider === 'gemini') {
+      setMsgModels(prev => ({ ...prev, [assistantIdx]: 'gemini-2.0-flash' }))
+    }
   }
 
   function handleKey(e: React.KeyboardEvent) {
