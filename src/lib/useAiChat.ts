@@ -1,5 +1,9 @@
 import { useState, useCallback } from 'react'
-import { anthropic, SYSTEM_PROMPT, buildResultContext, parseExtractedInputs } from './claude'
+import {
+  anthropic, SYSTEM_PROMPT, EXTRACTION_PROMPT,
+  buildResultContext, buildCalcPayloadContext,
+  parseExtractedInputs,
+} from './claude'
 import type { FillAction } from './claude'
 import type { LvCableResult, LvCableInput } from '../calculators/lvCableSizing'
 import type { AbcInput } from '../calculators/abcCableSizing'
@@ -67,41 +71,71 @@ export function useAiChat(currentResult: LvCableResult | null) {
   const [error, setError]         = useState<string | null>(null)
   const { modelId }               = useAiModelStore()
 
-  /**
-   * Send a message.
-   * @param userMessage   The user's text
-   * @param effectiveModel  The already-routed real model to use (determined by caller)
-   */
   const send = useCallback(async (
-    userMessage:   string,
+    userMessage:    string,
     effectiveModel: RealModelId,
   ): Promise<{ fillAction: FillAction | null }> => {
 
-    const userMsg: ChatMessage = { role: 'user', content: userMessage }
-    const nextMessages = [...messages, userMsg]
+    const userMsg: ChatMessage    = { role: 'user', content: userMessage }
+    const nextMessages            = [...messages, userMsg]
+    const assistantIdx            = nextMessages.length   // index of the about-to-be-added assistant msg
     setMessages([...nextMessages, { role: 'assistant', content: '' }])
     setStreaming(true)
     setError(null)
 
-    // ── 1. Retrieve similar past examples (non-blocking, best-effort) ─────────
+    // ── 1. Retrieve similar examples + extract params in parallel ─────────────
     const calcTypeHint = detectCalcType(userMessage)
     const quickParams  = extractQuickParams(userMessage)
-    const examplesCtx  = await findSimilarExamples({
-      calcType:        calcTypeHint,
-      designCurrent:   quickParams.designCurrent,
-      cableLength:     quickParams.cableLength,
-      voltage:         quickParams.voltage,
-      referenceMethod: quickParams.referenceMethod,
-    })
 
-    // ── 2. Build system prompt with current calc result + examples ────────────
-    const resultCtx = buildResultContext(currentResult)
+    const [examplesCtx, extractionResponse] = await Promise.all([
+      findSimilarExamples({
+        calcType:        calcTypeHint,
+        designCurrent:   quickParams.designCurrent,
+        cableLength:     quickParams.cableLength,
+        voltage:         quickParams.voltage,
+        referenceMethod: quickParams.referenceMethod,
+      }),
+      // Phase 1: Haiku extracts parameters — fast, cheap, no streaming
+      anthropic.messages.create({
+        model:      'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        system:     EXTRACTION_PROMPT,
+        messages:   [{ role: 'user', content: userMessage }],
+      }).catch(() => null),   // silent fallback — extraction failure is non-fatal
+    ])
+
+    // ── 2. Run actual calculator if parameters were extracted ─────────────────
+    let fillAction: FillAction | null = null
+    let calcPayload: CalcResultPayload | null = null
+
+    if (extractionResponse) {
+      const extractText = extractionResponse.content[0]?.type === 'text'
+        ? extractionResponse.content[0].text
+        : ''
+      fillAction = parseExtractedInputs(extractText)
+    }
+
+    if (fillAction) {
+      calcPayload = await runCalculator(fillAction)
+      if (calcPayload) {
+        // Attach result card immediately — visible while Claude streams its explanation
+        setCalcResult(assistantIdx, calcPayload)
+        setPendingFill(fillAction)
+      }
+    }
+
+    // ── 3. Build system context — inject ACTUAL result so Claude explains it ──
+    const currentCtx = buildResultContext(currentResult)
+    const actualCtx  = calcPayload ? buildCalcPayloadContext(calcPayload) : ''
+
     const system = [
       SYSTEM_PROMPT,
       examplesCtx,
-      resultCtx ? `\n\n---\n${resultCtx}` : '',
+      currentCtx ? `\n\n---\n${currentCtx}` : '',
+      actualCtx  ? `\n\n---\nACTUAL CALCULATOR RESULT (use these exact numbers):\n${actualCtx}` : '',
     ].join('')
 
+    // ── 4. Stream explanation based on actual results ─────────────────────────
     let fullText = ''
     try {
       const stream = anthropic.messages.stream({
@@ -118,13 +152,17 @@ export function useAiChat(currentResult: LvCableResult | null) {
         }
       }
 
-      // ── 3. Run the calculator if AI parsed a circuit ──────────────────────
-      const fillAction = parseExtractedInputs(fullText)
-      if (fillAction) {
-        const assistantMsgIdx = useAiChatStore.getState().messages.length - 1
-        const payload = await runCalculator(fillAction)
-        if (payload) setCalcResult(assistantMsgIdx, payload)
-        setPendingFill(fillAction)
+      // Fallback: if Haiku extraction failed, try parsing Claude's own response
+      if (!fillAction) {
+        const fallbackAction = parseExtractedInputs(fullText)
+        if (fallbackAction) {
+          const fallbackPayload = await runCalculator(fallbackAction)
+          if (fallbackPayload) {
+            setCalcResult(assistantIdx, fallbackPayload)
+            setPendingFill(fallbackAction)
+          }
+          fillAction = fallbackAction
+        }
       }
 
       return { fillAction }

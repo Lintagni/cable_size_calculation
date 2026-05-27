@@ -19,9 +19,9 @@ interface AiQuotaStore {
 
 // Monthly credit limits per plan
 export const PLAN_MONTHLY_QUOTA: Record<string, number> = {
-  free:     10,
-  pro:      200,
-  business: 2000,
+  free:     50,
+  pro:      500,
+  business: 3000,
 }
 
 // Credit weight per model (reflects real API cost ratio).

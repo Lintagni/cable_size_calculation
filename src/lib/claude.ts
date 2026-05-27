@@ -2,19 +2,56 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { LvCableInput } from '../calculators/lvCableSizing'
 import type { LvCableResult } from '../calculators/lvCableSizing'
 import type { AbcInput } from '../calculators/abcCableSizing'
+import type { AbcResult } from '../calculators/abcCableSizing'
 import type { BusbarInput } from '../calculators/busbarSizing'
+import type { BusbarResult } from '../calculators/busbarSizing'
+
+// Local alias — mirrors CalcResultPayload in aiChatStore (avoids circular import)
+type CalcResultPayload =
+  | { type: 'lv';     result: LvCableResult }
+  | { type: 'abc';    result: AbcResult }
+  | { type: 'busbar'; result: BusbarResult }
 
 export const anthropic = new Anthropic({
   apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
   dangerouslyAllowBrowser: true, // local dev only — move to edge function before deploy
 })
 
+// ── Extraction prompt: used by Haiku to pull parameters only (no explanation) ──
+export const EXTRACTION_PROMPT = `Extract calculator parameters from the user's message.
+Output ONLY a single JSON block — no explanation, no text before or after.
+
+For LV cable (building/underground wiring, conduit, trunking, trays):
+\`\`\`json
+{"action":"fill_form","inputs":{"description":"...","voltage":400,"phases":3,"powerFactor":0.85,"designCurrent":0,"protectiveDevice":"MCB","deviceRating":0,"referenceMethod":"C","cableLength":0,"insulation":"XLPE","cableConfig":"multicore","conductorMaterial":"copper","parallelCircuits":1,"ambientTemp":30,"groupedCircuits":1,"thermalInsulation":"none"}}
+\`\`\`
+
+For ABC aerial cable (overhead lines):
+\`\`\`json
+{"action":"fill_abc","inputs":{"designCurrent":0,"voltage":400,"cableLength":0,"isLighting":false}}
+\`\`\`
+
+For busbar sizing:
+\`\`\`json
+{"action":"fill_busbar","inputs":{"designCurrent":0,"voltage":400,"phases":3,"material":"copper","installation":"enclosed","arrangement":"flat-edge","ambientTemp":40,"barsPerPhase":1,"busbarLength":2,"frequency":50}}
+\`\`\`
+
+If the message is a question (not a sizing request), output:
+\`\`\`json
+{"action":"none"}
+\`\`\`
+
+Only include fields the user actually specified. Omit the rest so defaults apply.`
+
 export const SYSTEM_PROMPT = `You are an expert electrical engineering assistant specialising in BS7671:2018+A2 (IET Wiring Regulations, 18th Edition with Amendment 2). You assist engineers using a professional cable size calculator suite with three calculators: LV cable sizing (copper & aluminium), ABC aerial bundle cable sizing (NFC 33-209), and busbar sizing (IEC 60439 / BS EN 61439).
 
 You have two operating modes:
 
-## MODE 1 — Extract calculator inputs
-When the user describes a sizing scenario, identify which calculator applies and respond with ONE JSON block followed by a plain-English explanation.
+## MODE 1 — Explain a sizing result
+When "ACTUAL CALCULATOR RESULT" appears in the context, the BS7671 engine has already run with the exact code tables. Use ONLY the numbers provided — do NOT recalculate or second-guess them. Explain the result clearly: confirm the recommended size, explain each correction factor and why it applies, confirm compliance, and flag anything the engineer should note. Do NOT output a JSON block in this mode.
+
+## MODE 1b — Extract calculator inputs (fallback when no result is pre-calculated)
+When no ACTUAL CALCULATOR RESULT is in context but the user describes a sizing scenario, identify which calculator applies and respond with ONE JSON block followed by a plain-English explanation.
 
 ### LV Cable sizing (BS7671) — use for underground/building wiring, conduit, trunking, trays
 \`\`\`json
@@ -162,6 +199,43 @@ export function parseExtractedInputs(text: string): FillAction | null {
   } catch {
     return null
   }
+}
+
+/** Build context string from any calculator result payload (for injection into system prompt) */
+export function buildCalcPayloadContext(payload: CalcResultPayload): string {
+  if (payload.type === 'lv') return buildResultContext(payload.result)
+
+  if (payload.type === 'abc') {
+    const r   = payload.result
+    const rec = r.recommended
+    return `
+ABC Cable sizing result (NFC 33-209):
+- Design current Ib: ${r.input.designCurrent}A, Length: ${r.input.cableLength}m
+- Recommended: ${rec.config.label} (${rec.config.currentRating}A rated)
+- Voltage drop: ${rec.voltageDrop.toFixed(2)}V (${rec.voltageDropPct.toFixed(2)}%), limit: ${rec.maxAllowedVdropPct}%
+- Current OK: ${rec.currentOk ? 'YES' : 'NO'}, VD OK: ${rec.vdropOk ? 'YES' : 'NO'}
+- Compliant: ${rec.compliant ? 'YES' : 'NO'}
+${!rec.compliant ? `- Fail reasons: ${rec.reasons.join(', ')}` : ''}
+`
+  }
+
+  if (payload.type === 'busbar') {
+    const r   = payload.result
+    const rec = r.recommended
+    return `
+Busbar sizing result (IEC 60439 / BS EN 61439):
+- Design current: ${r.input.designCurrent}A, Material: ${r.input.material}
+- Recommended: ${rec.size.label} ${r.input.material} (CSA ${rec.size.csa}mm²)
+- Derated per bar: ${rec.deratedCurrent.toFixed(1)}A × ${r.input.barsPerPhase} bar(s) = ${rec.totalCurrent.toFixed(1)}A total
+- Voltage drop: ${rec.voltageDrop.toFixed(3)}V (${rec.voltageDropPct.toFixed(2)}%)
+- Current density: ${rec.currentDensity.toFixed(2)}A/mm²
+- Factors: Temp=${rec.factors.tempFactor.toFixed(3)}, Arrangement=${rec.factors.arrangementFactor}, Enclosure=${rec.factors.enclosureFactor}, Material=${rec.factors.materialFactor}
+- Compliant: ${rec.compliant ? 'YES' : 'NO'}
+${!rec.compliant ? `- Fail reasons: ${rec.reasons.join(', ')}` : ''}
+`
+  }
+
+  return ''
 }
 
 export function buildResultContext(result: LvCableResult | null): string {

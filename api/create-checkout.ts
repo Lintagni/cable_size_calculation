@@ -5,19 +5,19 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 // One-time packs: product ID → credits granted
 const PACK_CREDITS: Record<string, number> = {
-  [process.env.PRODUCT_STARTER    ?? 'pdt_0NfKWwNlgLAUIRjgrInu5']: 25,
-  [process.env.PRODUCT_BOOST      ?? 'pdt_0NfKX4XJ839wZrSHM3Qkz']: 75,
-  [process.env.PRODUCT_STANDARD   ?? 'pdt_0NfKXATusDEKQbyrqGX15']: 200,
-  [process.env.PRODUCT_PRO_PACK   ?? 'pdt_0NfKXEVFKZn8BKSHFsJ1O']: 600,
-  [process.env.PRODUCT_STUDIO     ?? 'pdt_0NfKXI6kBSG4QsZCeZ3j3']: 1500,
-  [process.env.PRODUCT_ENTERPRISE ?? 'pdt_0NfKXNDghtiQ6Vn9trCKx']: 5000,
+  [process.env.PRODUCT_STARTER    ?? 'pdt_0NfT4A7QFL27JpdwdFrrl']: 25,
+  [process.env.PRODUCT_BOOST      ?? 'pdt_0NfT4ADEcgVzB64xnvINx']: 75,
+  [process.env.PRODUCT_STANDARD   ?? 'pdt_0NfT4AGSoIGZqKeM47ury']: 200,
+  [process.env.PRODUCT_PRO_PACK   ?? 'pdt_0NfT4AItAA3GGzTqTS4C4']: 600,
+  [process.env.PRODUCT_STUDIO     ?? 'pdt_0NfT4AOoJMDIINnO79xgf']: 1500,
+  [process.env.PRODUCT_ENTERPRISE ?? 'pdt_0NfT4ASJ7Kr4d3WtRJ9Un']: 5000,
 }
 
 // Subscription plans: product ID → plan tier (credits handled by webhook)
 const SUBSCRIPTION_IDS = new Set([
   // Monthly
-  process.env.PRODUCT_PLAN_PRO          ?? 'pdt_0NfKXSIx1EMeoQ0buSGxU',
-  process.env.PRODUCT_PLAN_BUSINESS     ?? 'pdt_0NfKXWTQpI8bLIQHzwzE6',
+  process.env.PRODUCT_PLAN_PRO          ?? 'pdt_0NfT4AUumjuRg0bv0HzDK',
+  process.env.PRODUCT_PLAN_BUSINESS     ?? 'pdt_0NfT4AY1RJ1b42iTjNkPW',
   // Yearly
   process.env.PRODUCT_PLAN_PRO_YEAR      ?? 'pdt_0NfTAQYQofroLJNeMoOYv',
   process.env.PRODUCT_PLAN_BUSINESS_YEAR ?? 'pdt_0NfTAQcbASBXw55XMzQzN',
@@ -55,9 +55,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Payment service not configured.' })
     }
 
-    // Base URL: test.dodopayments.com for sandbox keys, live.dodopayments.com for production.
+    // Base URL: live.dodopayments.com for production, test.dodopayments.com for sandbox.
     // Override with DODO_API_URL env var if needed.
-    const dodoBase = process.env.DODO_API_URL ?? 'https://test.dodopayments.com'
+    const dodoBase = process.env.DODO_API_URL ?? 'https://live.dodopayments.com'
     console.log('Dodo API base:', dodoBase)
 
     // Manual timeout via AbortController (compatible with all Node.js ≥ 14)

@@ -66,8 +66,8 @@ function UpgradeBanner({ tier }: { tier: 'pro' | 'business' }) {
       <h3>{isPro ? 'Pro Plan Required' : 'Business Plan Required'}</h3>
       <p>
         {isPro
-          ? 'Short circuit and motor cable sizing require Pro ($12.99/mo). Includes 200 AI credits, aluminium cables, and PDF reports.'
-          : 'ABC cable and busbar sizing require Business ($34.99/mo). Includes unlimited AI, API access, and custom report branding.'}
+          ? 'Short circuit and motor cable sizing require Pro ($12.99/mo). Includes 500 AI credits/mo, aluminium cables, and PDF reports.'
+          : 'ABC cable and busbar sizing require Business ($34.99/mo). Includes 3,000 AI credits/mo, API access, and custom report branding.'}
       </p>
       <Link to="/pricing" className="btn btn-accent">
         View pricing <ArrowUpRight size={14} />
