@@ -1,12 +1,7 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import AiChatPanel from '../components/AiAssistant/AiChatPanel'
-import { usePendingActionStore } from '../store/pendingActionStore'
-import type { FillAction } from '../lib/claude'
 
 export default function AiPage() {
-  const navigate  = useNavigate()
-  const setAction = usePendingActionStore(s => s.setAction)
 
   // On mobile, .ai-page uses position:fixed (top:56px, bottom:76px via CSS).
   // We only need JS to:
@@ -60,14 +55,9 @@ export default function AiPage() {
     }
   }, [])
 
-  function handleFillAction(action: FillAction) {
-    setAction(action)
-    navigate('/calculator')
-  }
-
   return (
     <div className="ai-page">
-      <AiChatPanel currentResult={null} onFillAction={handleFillAction} />
+      <AiChatPanel currentResult={null} />
     </div>
   )
 }

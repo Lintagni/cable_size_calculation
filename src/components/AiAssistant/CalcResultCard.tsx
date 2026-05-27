@@ -1,11 +1,10 @@
 import { useState } from 'react'
-import { Download, ArrowUpRight, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { Download, FileSpreadsheet, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 import type { CalcResultPayload } from '../../store/aiChatStore'
-import { generateReport } from '../../lib/generateReport'
+import { generateReport, generateExcelReport } from '../../lib/generateReport'
 
 interface Props {
   payload: CalcResultPayload
-  onOpenInCalc?: () => void
 }
 
 // ── Stat cell helper ──────────────────────────────────────────────────────────
@@ -33,15 +32,15 @@ function Stat({
 
 // ── Card shell ────────────────────────────────────────────────────────────────
 function CardShell({
-  ok, title, subtitle, children, onDownload, downloading, onOpenInCalc,
+  ok, title, subtitle, children, onDownloadPdf, onDownloadExcel, downloading,
 }: {
   ok: boolean
   title: string
   subtitle?: string
   children: React.ReactNode
-  onDownload: () => void
+  onDownloadPdf: () => void
+  onDownloadExcel: () => void
   downloading: boolean
-  onOpenInCalc?: () => void
 }) {
   return (
     <div style={{
@@ -91,11 +90,11 @@ function CardShell({
       {/* Footer */}
       <div style={{
         padding: '8px 14px', borderTop: '1px solid var(--line)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+        display: 'flex', alignItems: 'center', gap: 8,
         background: 'var(--surface-2)',
       }}>
         <button
-          onClick={onDownload}
+          onClick={onDownloadPdf}
           disabled={downloading}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
@@ -109,24 +108,26 @@ function CardShell({
             ? <Loader2 size={13} className="animate-spin" />
             : <Download size={13} />
           }
-          {downloading ? 'Generating…' : 'Download PDF'}
+          {downloading ? 'Generating…' : 'PDF'}
         </button>
 
-        {onOpenInCalc && (
-          <button
-            onClick={onOpenInCalc}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4,
-              fontSize: 11, fontWeight: 600, color: 'var(--ink-3)',
-              background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px',
-              textDecoration: 'none',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}
-          >
-            Open in Calculator <ArrowUpRight size={11} />
-          </button>
-        )}
+        <button
+          onClick={onDownloadExcel}
+          disabled={downloading}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            fontSize: 12, fontWeight: 600, padding: '6px 14px',
+            background: 'var(--surface)', color: 'var(--ink)',
+            border: '1px solid var(--line)', borderRadius: 8,
+            cursor: downloading ? 'wait' : 'pointer',
+            opacity: downloading ? 0.7 : 1, transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--line-2)')}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--line)')}
+        >
+          <FileSpreadsheet size={13} />
+          Excel
+        </button>
       </div>
     </div>
   )
@@ -158,12 +159,16 @@ function Reasons({ reasons }: { reasons: string[] }) {
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
-export default function CalcResultCard({ payload, onOpenInCalc }: Props) {
+export default function CalcResultCard({ payload }: Props) {
   const [downloading, setDownloading] = useState(false)
 
-  async function handleDownload() {
+  async function handleDownloadPdf() {
     setDownloading(true)
     try { await generateReport(payload) } finally { setDownloading(false) }
+  }
+
+  function handleDownloadExcel() {
+    generateExcelReport(payload)
   }
 
   // ── LV cable ──────────────────────────────────────────────────────────────
@@ -181,7 +186,7 @@ export default function CalcResultCard({ payload, onOpenInCalc }: Props) {
 
     return (
       <CardShell ok={ok} title={title} subtitle={subtitle}
-        onDownload={handleDownload} downloading={downloading} onOpenInCalc={onOpenInCalc}>
+        onDownloadPdf={handleDownloadPdf} onDownloadExcel={handleDownloadExcel} downloading={downloading}>
         <StatsGrid>
           <Stat label="Design current Ib" value={`${r.input.designCurrent} A`} />
           <Stat label="Derated rating Iz" value={`${res.deRatedRating.toFixed(1)} A`} mono />
@@ -207,7 +212,7 @@ export default function CalcResultCard({ payload, onOpenInCalc }: Props) {
 
     return (
       <CardShell ok={ok} title={title} subtitle={subtitle}
-        onDownload={handleDownload} downloading={downloading} onOpenInCalc={onOpenInCalc}>
+        onDownloadPdf={handleDownloadPdf} onDownloadExcel={handleDownloadExcel} downloading={downloading}>
         <StatsGrid>
           <Stat label="Design current" value={`${r.input.designCurrent} A`} />
           <Stat label="Current rating" value={`${rec.config.currentRating} A`} mono />
@@ -234,7 +239,7 @@ export default function CalcResultCard({ payload, onOpenInCalc }: Props) {
 
     return (
       <CardShell ok={ok} title={title} subtitle={subtitle}
-        onDownload={handleDownload} downloading={downloading} onOpenInCalc={onOpenInCalc}>
+        onDownloadPdf={handleDownloadPdf} onDownloadExcel={handleDownloadExcel} downloading={downloading}>
         <StatsGrid>
           <Stat label="Design current" value={`${r.input.designCurrent} A`} />
           <Stat label="Total capacity" value={`${rec.totalCurrent.toFixed(0)} A`} mono />

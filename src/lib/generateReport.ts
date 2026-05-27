@@ -1,5 +1,140 @@
 import type { CalcResultPayload } from '../store/aiChatStore'
 
+function downloadCsv(rows: string[][], filename: string) {
+  const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\r\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+
+export function generateExcelReport(payload: CalcResultPayload): void {
+  if (payload.type === 'lv') {
+    const { result: r } = payload
+    const res = r.results
+    const cf  = r.correctionFactors
+    const rows: string[][] = [
+      ['CableCalc — LV Cable Sizing Report (BS7671:2018+A2)'],
+      ['Generated', new Date().toLocaleString()],
+      [],
+      ['INPUTS'],
+      ['Circuit description', r.input.description || '—'],
+      ['Voltage (V)', String(r.input.voltage)],
+      ['Phases', String(r.input.phases)],
+      ['Design current Ib (A)', String(r.input.designCurrent)],
+      ['Protective device', r.input.protectiveDevice],
+      ['Device rating In (A)', String(r.input.deviceRating)],
+      ['Reference method', r.input.referenceMethod],
+      ['Cable length (m)', String(r.input.cableLength)],
+      ['Insulation', r.input.insulation],
+      ['Configuration', r.input.cableConfig],
+      ['Conductor material', r.input.conductorMaterial ?? 'copper'],
+      ['Parallel circuits', String(r.input.parallelCircuits)],
+      ['Ambient temp (°C)', String(r.input.ambientTemp)],
+      ['Grouped circuits', String(r.input.groupedCircuits)],
+      ['Thermal insulation', r.input.thermalInsulation],
+      [],
+      ['RESULTS'],
+      ['Recommended CSA (mm²)', String(r.recommendedCsa)],
+      ['Tabulated rating It (A)', String(res.tabulatedRating)],
+      ['Derated rating Iz (A)', res.deRatedRating.toFixed(1)],
+      ['Voltage drop (V)', res.voltageDrop.toFixed(3)],
+      ['Voltage drop (%)', res.voltageDropPct.toFixed(2)],
+      ['VD limit (V)', res.maxAllowedVdrop.toFixed(2)],
+      ['VD limit (%)', String(res.maxAllowedVdropPct)],
+      ['Compliant', res.compliant ? 'YES' : 'NO'],
+      [],
+      ['CORRECTION FACTORS'],
+      ['Ca (ambient temp)', cf.Ca.toFixed(3)],
+      ['Cg (grouping)', cf.Cg.toFixed(3)],
+      ['Ci (thermal insulation)', cf.Ci.toFixed(3)],
+      ['Cc (device type)', cf.Cc.toFixed(3)],
+      ['Combined factor', cf.combined.toFixed(3)],
+    ]
+    if (!res.compliant) {
+      rows.push([], ['FAIL REASONS'])
+      res.reasons.forEach(r2 => rows.push([r2]))
+    }
+    downloadCsv(rows, `CableCalc-LV-${r.input.description || 'report'}.csv`)
+    return
+  }
+
+  if (payload.type === 'abc') {
+    const { result: r } = payload
+    const rec = r.recommended
+    const rows: string[][] = [
+      ['CableCalc — ABC Cable Sizing Report (NFC 33-209)'],
+      ['Generated', new Date().toLocaleString()],
+      [],
+      ['INPUTS'],
+      ['Design current Ib (A)', String(r.input.designCurrent)],
+      ['Voltage (V)', String(r.input.voltage)],
+      ['Cable length (m)', String(r.input.cableLength)],
+      ['Circuit type', r.input.isLighting ? 'Lighting (3% VD limit)' : 'Power (5% VD limit)'],
+      [],
+      ['RESULTS'],
+      ['Recommended cable', rec.config.label],
+      ['Current rating (A)', String(rec.config.currentRating)],
+      ['Voltage drop (V)', rec.voltageDrop.toFixed(3)],
+      ['Voltage drop (%)', rec.voltageDropPct.toFixed(2)],
+      ['VD limit (V)', rec.maxAllowedVdrop.toFixed(2)],
+      ['VD limit (%)', String(rec.maxAllowedVdropPct)],
+      ['Current OK', rec.currentOk ? 'YES' : 'NO'],
+      ['VD OK', rec.vdropOk ? 'YES' : 'NO'],
+      ['Compliant', rec.compliant ? 'YES' : 'NO'],
+    ]
+    if (!rec.compliant) {
+      rows.push([], ['FAIL REASONS'])
+      rec.reasons.forEach(r2 => rows.push([r2]))
+    }
+    downloadCsv(rows, 'CableCalc-ABC-report.csv')
+    return
+  }
+
+  if (payload.type === 'busbar') {
+    const { result: r } = payload
+    const rec = r.recommended
+    const f   = rec.factors
+    const rows: string[][] = [
+      ['CableCalc — Busbar Sizing Report (IEC 60439 / BS EN 61439)'],
+      ['Generated', new Date().toLocaleString()],
+      [],
+      ['INPUTS'],
+      ['Design current (A)', String(r.input.designCurrent)],
+      ['Voltage (V)', String(r.input.voltage)],
+      ['Phases', String(r.input.phases)],
+      ['Material', r.input.material],
+      ['Installation', r.input.installation],
+      ['Arrangement', r.input.arrangement],
+      ['Ambient temp (°C)', String(r.input.ambientTemp)],
+      ['Bars per phase', String(r.input.barsPerPhase)],
+      ['Busbar length (m)', String(r.input.busbarLength)],
+      [],
+      ['RESULTS'],
+      ['Recommended bar', rec.size.label + ' mm'],
+      ['CSA (mm²)', String(rec.size.csa)],
+      ['Derated per bar (A)', rec.deratedCurrent.toFixed(1)],
+      ['Total capacity (A)', rec.totalCurrent.toFixed(0)],
+      ['Current density (A/mm²)', rec.currentDensity.toFixed(2)],
+      ['Voltage drop (V)', rec.voltageDrop.toFixed(3)],
+      ['Voltage drop (%)', rec.voltageDropPct.toFixed(2)],
+      ['Compliant', rec.compliant ? 'YES' : 'NO'],
+      [],
+      ['CORRECTION FACTORS'],
+      ['Temperature factor', f.tempFactor.toFixed(3)],
+      ['Arrangement factor', f.arrangementFactor.toFixed(3)],
+      ['Enclosure factor', f.enclosureFactor.toFixed(3)],
+      ['Material factor', f.materialFactor.toFixed(3)],
+    ]
+    if (!rec.compliant) {
+      rows.push([], ['FAIL REASONS'])
+      rec.reasons.forEach(r2 => rows.push([r2]))
+    }
+    downloadCsv(rows, 'CableCalc-Busbar-report.csv')
+  }
+}
+
 // Lazy-load jsPDF so it doesn't bloat the initial bundle
 async function getPdf() {
   const { jsPDF } = await import('jspdf')

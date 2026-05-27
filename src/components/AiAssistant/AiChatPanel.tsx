@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import { Sparkles, Send, RotateCcw, ArrowUpRight, ChevronDown, Check, Zap, X, Save } from 'lucide-react'
 import clsx from 'clsx'
 import { useAiChat } from '../../lib/useAiChat'
-import type { FillAction } from '../../lib/claude'
 import { useActivePlan } from '../../store/planStore'
 import { useAiQuotaStore, getRemaining, canAfford, PLAN_MONTHLY_QUOTA, MODEL_CREDIT_WEIGHT } from '../../store/aiQuotaStore'
 import { useAiModelStore, AI_MODELS } from '../../store/aiModelStore'
@@ -19,7 +18,6 @@ import { routeQuery } from '../../lib/complexityRouter'
 
 interface Props {
   currentResult: LvCableResult | null
-  onFillAction: (action: FillAction) => void
 }
 
 function greeting() {
@@ -142,14 +140,14 @@ function ResponseModelTag({ modelId }: { modelId: AiModelId }) {
 }
 
 // ── Main panel ────────────────────────────────────────────────────────────────
-export default function AiChatPanel({ currentResult, onFillAction }: Props) {
+export default function AiChatPanel({ currentResult }: Props) {
   const plan = useActivePlan()
   const { record, consume } = useAiQuotaStore()
   const { modelId } = useAiModelStore()
   const { save: saveChat } = useSavedChatStore()
 
   // Chat state lives in Zustand — survives navigation to Calculator and back
-  const { msgModels, setMsgModels, calcResults, pendingFill, setPendingFill } = useAiChatStore()
+  const { msgModels, setMsgModels, calcResults } = useAiChatStore()
 
   const quota     = PLAN_MONTHLY_QUOTA[plan]
   const remaining = getRemaining(record, plan)
@@ -278,7 +276,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
           {greeting()}, Engineer.
         </h1>
         <p style={{ color: 'var(--ink-3)', marginBottom: 24, textAlign: 'center', fontSize: 15, maxWidth: 480 }}>
-          Describe a circuit in plain English — I'll fill the right calculator automatically.
+          Describe your circuit — I'll run the BS7671 calculation and give you a complete result with PDF &amp; Excel download.
         </p>
 
         {/* ── Input card — centered in the page ─────────────────────────────── */}
@@ -467,10 +465,7 @@ export default function AiChatPanel({ currentResult, onFillAction }: Props) {
             {/* Calc result card — shown below each assistant message that has a result */}
             {msg.role === 'assistant' && calcResults[i] && (!streaming || i < messages.length - 1) && (
               <div style={{ paddingLeft: 40 }}>
-                <CalcResultCard
-                  payload={calcResults[i]}
-                  onOpenInCalc={pendingFill ? () => { onFillAction(pendingFill); setPendingFill(null) } : undefined}
-                />
+                <CalcResultCard payload={calcResults[i]} />
               </div>
             )}
           </div>
