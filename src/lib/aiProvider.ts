@@ -8,14 +8,21 @@ const anthropic = new Anthropic({
 
 const gemini = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY || '')
 
-/** True when the Anthropic error is a billing/quota error (not a logic error) */
+/** True when an error is a billing/quota/rate-limit error from either provider */
 function isQuotaError(e: unknown): boolean {
   if (e instanceof Error) {
     const msg = e.message.toLowerCase()
-    return msg.includes('credit balance is too low') || msg.includes('quota exceeded')
+    return (
+      msg.includes('credit balance is too low') ||   // Anthropic billing
+      msg.includes('quota exceeded') ||              // generic
+      msg.includes('429')                            // Gemini / any 429
+    )
   }
   return false
 }
+
+const BOTH_EXHAUSTED =
+  'AI service temporarily unavailable — Claude credits are exhausted and the Gemini fallback has hit its quota. Please top up Claude credits or enable billing on your Gemini API project.'
 
 function toGeminiModel(claudeModel: string): string {
   // Use Flash for Haiku-class (cheap/fast), Flash for Sonnet-class as fallback
@@ -73,12 +80,16 @@ export async function* streamAiResponse(
     parts: [{ text: m.content }],
   }))
 
-  const chat   = model.startChat({ history })
-  const result = await chat.sendMessageStream(lastMsg.content)
-
-  for await (const chunk of result.stream) {
-    const text = chunk.text()
-    if (text) yield text
+  const chat = model.startChat({ history })
+  try {
+    const result = await chat.sendMessageStream(lastMsg.content)
+    for await (const chunk of result.stream) {
+      const text = chunk.text()
+      if (text) yield text
+    }
+  } catch (e) {
+    if (isQuotaError(e)) throw new Error(BOTH_EXHAUSTED)
+    throw e
   }
 }
 
@@ -111,6 +122,11 @@ export async function completeAiRequest(params: {
     model: toGeminiModel(params.model),
     systemInstruction: params.system,
   })
-  const result = await model.generateContent(params.message)
-  return result.response.text()
+  try {
+    const result = await model.generateContent(params.message)
+    return result.response.text()
+  } catch (e) {
+    if (isQuotaError(e)) throw new Error(BOTH_EXHAUSTED)
+    throw e
+  }
 }
