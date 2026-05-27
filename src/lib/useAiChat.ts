@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react'
 import {
-  anthropic, SYSTEM_PROMPT, EXTRACTION_PROMPT,
+  SYSTEM_PROMPT, EXTRACTION_PROMPT,
   buildResultContext, buildCalcPayloadContext,
   parseExtractedInputs,
 } from './claude'
 import type { FillAction } from './claude'
+import { streamAiResponse, completeAiRequest } from './aiProvider'
 import type { LvCableResult, LvCableInput } from '../calculators/lvCableSizing'
 import type { AbcInput } from '../calculators/abcCableSizing'
 import type { BusbarInput } from '../calculators/busbarSizing'
@@ -96,12 +97,13 @@ export function useAiChat(currentResult: LvCableResult | null) {
         referenceMethod: quickParams.referenceMethod,
       }),
       // Phase 1: Haiku extracts parameters — fast, cheap, no streaming
-      anthropic.messages.create({
+      completeAiRequest({
         model:      'claude-haiku-4-5-20251001',
         max_tokens: 300,
         system:     EXTRACTION_PROMPT,
-        messages:   [{ role: 'user', content: userMessage }],
-      }).catch(() => null),   // silent fallback — extraction failure is non-fatal
+        message:    userMessage,
+      }).then(text => ({ content: [{ type: 'text' as const, text }] }))
+        .catch(() => null),   // silent fallback — extraction failure is non-fatal
     ])
 
     // ── 2. Run actual calculator if parameters were extracted ─────────────────
@@ -138,18 +140,14 @@ export function useAiChat(currentResult: LvCableResult | null) {
     // ── 4. Stream explanation based on actual results ─────────────────────────
     let fullText = ''
     try {
-      const stream = anthropic.messages.stream({
+      for await (const chunk of streamAiResponse({
         model:      effectiveModel,
         max_tokens: 1024,
         system,
         messages:   nextMessages.map(m => ({ role: m.role, content: m.content })),
-      })
-
-      for await (const chunk of stream) {
-        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-          fullText += chunk.delta.text
-          setMessages([...nextMessages, { role: 'assistant', content: fullText }])
-        }
+      })) {
+        fullText += chunk
+        setMessages([...nextMessages, { role: 'assistant', content: fullText }])
       }
 
       // Fallback: if Haiku extraction failed, try parsing Claude's own response

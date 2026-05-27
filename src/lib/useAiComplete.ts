@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
-import { anthropic, SYSTEM_PROMPT, buildResultContext, parseExtractedInputs } from './claude'
+import { SYSTEM_PROMPT, buildResultContext, parseExtractedInputs } from './claude'
+import { streamAiResponse } from './aiProvider'
 import type { LvCableResult, LvCableInput } from '../calculators/lvCableSizing'
 
 export interface AiCompleteResult {
@@ -24,18 +25,14 @@ export function useAiComplete(currentResult: LvCableResult | null) {
 
     let fullText = ''
     try {
-      const stream = anthropic.messages.stream({
+      for await (const chunk of streamAiResponse({
         model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         system,
         messages: [{ role: 'user', content: userPrompt }],
-      })
-
-      for await (const chunk of stream) {
-        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-          fullText += chunk.delta.text
-          setResponse(fullText)
-        }
+      })) {
+        fullText += chunk
+        setResponse(fullText)
       }
 
       const parsed = parseExtractedInputs(fullText)

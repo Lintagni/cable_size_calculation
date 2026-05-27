@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
-import { anthropic, SYSTEM_PROMPT, buildResultContext, type ChatMessage } from '../../lib/claude'
+import { SYSTEM_PROMPT, buildResultContext, type ChatMessage } from '../../lib/claude'
+import { streamAiResponse } from '../../lib/aiProvider'
 import type { LvCableResult } from '../../calculators/lvCableSizing'
 
 export function useChatStream(currentResult: LvCableResult | null) {
@@ -25,21 +26,17 @@ export function useChatStream(currentResult: LvCableResult | null) {
     setMessages(prev => [...prev, { role: 'assistant', content: '' }])
 
     try {
-      const stream = anthropic.messages.stream({
+      for await (const chunk of streamAiResponse({
         model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         system: systemWithCtx,
         messages: updated.map(m => ({ role: m.role, content: m.content })),
-      })
-
-      for await (const chunk of stream) {
-        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-          assistantText += chunk.delta.text
-          setMessages(prev => [
-            ...prev.slice(0, -1),
-            { role: 'assistant', content: assistantText },
-          ])
-        }
+      })) {
+        assistantText += chunk
+        setMessages(prev => [
+          ...prev.slice(0, -1),
+          { role: 'assistant', content: assistantText },
+        ])
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'API error'
