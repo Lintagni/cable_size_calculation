@@ -28,6 +28,30 @@ function toGeminiModel(_claudeModel: string): string {
   return 'gemini-2.5-flash'
 }
 
+async function* streamGemini(
+  modelId: string,
+  system: string,
+  messages: StreamParams['messages'],
+): AsyncGenerator<string> {
+  const model   = gemini.getGenerativeModel({ model: modelId, systemInstruction: system })
+  const lastMsg = messages[messages.length - 1]
+  const history = messages.slice(0, -1).map(m => ({
+    role:  m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }))
+  const chat   = model.startChat({ history })
+  try {
+    const result = await chat.sendMessageStream(lastMsg.content)
+    for await (const chunk of result.stream) {
+      const text = chunk.text()
+      if (text) yield text
+    }
+  } catch (e) {
+    if (isQuotaError(e)) throw new Error(BOTH_EXHAUSTED)
+    throw e
+  }
+}
+
 export interface StreamParams {
   model: string
   max_tokens: number
@@ -44,6 +68,12 @@ export async function* streamAiResponse(
   params: StreamParams,
   onFallback?: () => void,
 ): AsyncGenerator<string> {
+  // ── If Gemini was explicitly chosen, skip Claude entirely ────────────────────
+  if (params.model.startsWith('gemini')) {
+    yield* streamGemini(params.model, params.system, params.messages)
+    return
+  }
+
   // ── Try Claude ───────────────────────────────────────────────────────────────
   try {
     const stream = anthropic.messages.stream({
@@ -66,29 +96,7 @@ export async function* streamAiResponse(
   }
 
   // ── Gemini fallback ──────────────────────────────────────────────────────────
-  const model = gemini.getGenerativeModel({
-    model: toGeminiModel(params.model),
-    systemInstruction: params.system,
-  })
-
-  // Convert history (all but last message) to Gemini's format
-  const lastMsg = params.messages[params.messages.length - 1]
-  const history = params.messages.slice(0, -1).map(m => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }],
-  }))
-
-  const chat = model.startChat({ history })
-  try {
-    const result = await chat.sendMessageStream(lastMsg.content)
-    for await (const chunk of result.stream) {
-      const text = chunk.text()
-      if (text) yield text
-    }
-  } catch (e) {
-    if (isQuotaError(e)) throw new Error(BOTH_EXHAUSTED)
-    throw e
-  }
+  yield* streamGemini(toGeminiModel(params.model), params.system, params.messages)
 }
 
 /**
@@ -101,6 +109,11 @@ export async function completeAiRequest(params: {
   system: string
   message: string
 }): Promise<string> {
+  // ── If Gemini was explicitly chosen, skip Claude entirely ────────────────────
+  if (params.model.startsWith('gemini')) {
+    return completeGemini(params.model, params.system, params.message)
+  }
+
   // ── Try Claude ───────────────────────────────────────────────────────────────
   try {
     const response = await anthropic.messages.create({
@@ -116,12 +129,13 @@ export async function completeAiRequest(params: {
   }
 
   // ── Gemini fallback ──────────────────────────────────────────────────────────
-  const model  = gemini.getGenerativeModel({
-    model: toGeminiModel(params.model),
-    systemInstruction: params.system,
-  })
+  return completeGemini(toGeminiModel(params.model), params.system, params.message)
+}
+
+async function completeGemini(modelId: string, system: string, message: string): Promise<string> {
+  const model = gemini.getGenerativeModel({ model: modelId, systemInstruction: system })
   try {
-    const result = await model.generateContent(params.message)
+    const result = await model.generateContent(message)
     return result.response.text()
   } catch (e) {
     if (isQuotaError(e)) throw new Error(BOTH_EXHAUSTED)

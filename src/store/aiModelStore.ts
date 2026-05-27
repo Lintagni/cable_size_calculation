@@ -8,11 +8,11 @@ export type AiModelId =
   | 'claude-haiku-4-5'
   | 'gemini-2.5-flash'   // display-only — set on messages when Claude quota fallback fires
 
-/** Real Claude model IDs (excludes 'auto' sentinel and Gemini fallback) */
-export type RealModelId = Exclude<AiModelId, 'auto' | 'gemini-2.5-flash'>
+/** Real model IDs (excludes 'auto' sentinel) */
+export type RealModelId = Exclude<AiModelId, 'auto'>
 
-/** Models shown in the user-facing picker (Gemini is fallback-only, not selectable) */
-export const SELECTABLE_MODEL_IDS: AiModelId[] = ['auto', 'claude-opus-4-5', 'claude-sonnet-4-6', 'claude-haiku-4-5']
+/** Models shown in the user-facing picker */
+export const SELECTABLE_MODEL_IDS: AiModelId[] = ['auto', 'claude-opus-4-5', 'claude-sonnet-4-6', 'claude-haiku-4-5', 'gemini-2.5-flash']
 
 export interface AiModel {
   id:          AiModelId
@@ -59,8 +59,8 @@ export const AI_MODELS: AiModel[] = [
   {
     id:          'gemini-2.5-flash',
     label:       'Gemini',
-    sublabel:    'Fallback',
-    description: 'Google Gemini 2.0 Flash — used automatically when Claude quota is exhausted.',
+    sublabel:    'Google AI',
+    description: 'Google Gemini 2.5 Flash — free tier, good for general Q&A. Also used automatically when Claude quota is exhausted.',
     color:       'text-blue-500 dark:text-blue-400',
     badge:       'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400',
   },
