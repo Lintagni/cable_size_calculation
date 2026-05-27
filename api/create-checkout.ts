@@ -64,34 +64,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), 9000)
 
+    // Subscriptions use a different endpoint and body shape than one-time payments
+    const endpoint = isSubscription ? `${dodoBase}/subscriptions` : `${dodoBase}/payments`
+    const customer = userEmail
+      ? { email: userEmail, name: userEmail.split('@')[0] }
+      : undefined
+
+    const requestBody = isSubscription
+      ? {
+          // Dodo subscription body: product_id at top level, no billing/product_cart
+          ...(customer ? { customer } : {}),
+          product_id:   productId,
+          payment_link: true,
+          return_url:   `${siteUrl}/payment-success`,
+          metadata: {
+            ...(userId    ? { user_id:    String(userId)    } : {}),
+            ...(userEmail ? { user_email: String(userEmail) } : {}),
+          },
+        }
+      : {
+          // Dodo one-time payment body
+          ...(customer ? { customer } : {}),
+          billing:      { city: 'N/A', country: 'US', state: 'N/A', street: 'N/A', zipcode: '00000' },
+          product_cart: [{ product_id: productId, quantity: 1 }],
+          payment_link: true,
+          return_url:   `${siteUrl}/payment-success`,
+          metadata: {
+            ...(credits   ? { credits:    String(credits)   } : {}),
+            ...(userId    ? { user_id:    String(userId)    } : {}),
+            ...(userEmail ? { user_email: String(userEmail) } : {}),
+          },
+        }
+
+    console.log('Dodo endpoint:', endpoint, '| subscription:', isSubscription)
+
     let dodoRes: Response
     try {
-      dodoRes = await fetch(`${dodoBase}/payments`, {
+      dodoRes = await fetch(endpoint, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${dodoKey}`,
           'Content-Type': 'application/json',
         },
         signal: controller.signal,
-        body: JSON.stringify({
-          // CustomerRequest enum accepts { email, name } for new customer
-          // or { customer_id } for existing. Omit entirely if no email known.
-          ...(userEmail ? {
-            customer: {
-              email: userEmail,
-              name:  userEmail.split('@')[0],
-            },
-          } : {}),
-          billing: { city: 'N/A', country: 'US', state: 'N/A', street: 'N/A', zipcode: '00000' },
-          product_cart: [{ product_id: productId, quantity: 1 }],
-          payment_link: true,
-          return_url: `${siteUrl}/payment-success`,
-          metadata: {
-            ...(credits   ? { credits:    String(credits)   } : {}),
-            ...(userId    ? { user_id:    String(userId)    } : {}),
-            ...(userEmail ? { user_email: String(userEmail) } : {}),
-          },
-        }),
+        body: JSON.stringify(requestBody),
       })
     } catch (fetchErr) {
       clearTimeout(timer)
