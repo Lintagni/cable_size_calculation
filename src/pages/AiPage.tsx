@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import AiChatPanel from '../components/AiAssistant/AiChatPanel'
+import AiErrorBoundary from '../components/AiAssistant/AiErrorBoundary'
 
 export default function AiPage() {
 
@@ -57,7 +58,9 @@ export default function AiPage() {
 
   return (
     <div className="ai-page">
-      <AiChatPanel currentResult={null} />
+      <AiErrorBoundary>
+        <AiChatPanel currentResult={null} />
+      </AiErrorBoundary>
     </div>
   )
 }

@@ -77,8 +77,10 @@ export function useAiChat(currentResult: LvCableResult | null) {
     effectiveModel: RealModelId,
   ): Promise<{ fillAction: FillAction | null; provider: 'claude' | 'gemini' }> => {
 
+    // Always read the latest messages directly from the store to avoid stale closure
+    const currentMessages         = useAiChatStore.getState().messages
     const userMsg: ChatMessage    = { role: 'user', content: userMessage }
-    const nextMessages            = [...messages, userMsg]
+    const nextMessages            = [...currentMessages, userMsg]
     const assistantIdx            = nextMessages.length   // index of the about-to-be-added assistant msg
     setMessages([...nextMessages, { role: 'assistant', content: '' }])
     setStreaming(true)
@@ -177,7 +179,7 @@ export function useAiChat(currentResult: LvCableResult | null) {
       setStreaming(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, currentResult, modelId])
+  }, [currentResult, modelId])
 
   const reset = useCallback(() => {
     setMessages([])
