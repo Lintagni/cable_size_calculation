@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Login-gated and transactional routes — no value in the index
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /payment-success
+Disallow: /api/
+
+Sitemap: https://www.cablecalc.org/sitemap.xml

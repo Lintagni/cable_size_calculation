@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar'
+import Shell from './components/Shell'
+import Seo from './components/Seo'
 import Landing from './pages/Landing'
 import Calculator from './pages/Calculator'
 import AiPage from './pages/AiPage'
@@ -15,15 +17,6 @@ import { useAuthStore } from './store/authStore'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import { loadCableData } from './lib/loadCableData'
 import { usePlanStore } from './store/planStore'
-
-function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <Navbar />
-      {children}
-    </div>
-  )
-}
 
 function ProtectedShell({ children }: { children: React.ReactNode }) {
   return (
@@ -69,6 +62,7 @@ export default function App() {
 
   return (
     <>
+      <Seo />
       <Routes>
         {/* Public pages */}
         <Route path="/"        element={<Shell><Landing /></Shell>} />

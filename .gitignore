@@ -5,6 +5,8 @@
 
 # Local secrets / credentials — never commit
 keys.txt
+# Contains live Dodo Payments keys hardcoded — must never be committed
+scripts/set-vercel-env.mjs
 
 # Claude Code config
 .claude/
@@ -21,6 +23,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.prerender-tmp
 *.local
 
 # Editor directories and files

@@ -31,8 +31,11 @@ export default defineConfig({
       workbox: {
         // Cache all static assets
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // Don't cache Supabase or API calls — they must stay live
-        navigateFallbackDenylist: [/^\/api\//],
+        // Don't cache Supabase or API calls — they must stay live.
+        // /pricing is prerendered to its own HTML file (scripts/prerender.mjs);
+        // let it hit the network so the SW doesn't serve the homepage shell
+        // in its place.
+        navigateFallbackDenylist: [/^\/api\//, /^\/pricing\/?$/],
         runtimeCaching: [
           {
             // Google Fonts stylesheets — cache for a year
