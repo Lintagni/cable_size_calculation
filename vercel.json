@@ -4,6 +4,11 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/pricing", "destination": "/pricing/index.html" },
+    { "source": "/calculator/swa-armoured-cable-size", "destination": "/calculator/swa-armoured-cable-size/index.html" },
+    { "source": "/calculator/voltage-drop", "destination": "/calculator/voltage-drop/index.html" },
+    { "source": "/calculator/shower-cable-size", "destination": "/calculator/shower-cable-size/index.html" },
+    { "source": "/guides/bs7671-cable-sizing-explained", "destination": "/guides/bs7671-cable-sizing-explained/index.html" },
+    { "source": "/tables/bs7671-cable-current-rating-tables", "destination": "/tables/bs7671-cable-current-rating-tables/index.html" },
     { "source": "/((?!api).*)", "destination": "/index.html" }
   ]
 }

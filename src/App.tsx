@@ -10,6 +10,11 @@ import Dashboard from './pages/Dashboard'
 import Pricing from './pages/Pricing'
 import Admin from './pages/Admin'
 import PaymentSuccess from './pages/PaymentSuccess'
+import SwaArmouredCalculator from './pages/public/SwaArmouredCalculator'
+import VoltageDropCalculator from './pages/public/VoltageDropCalculator'
+import ShowerCableCalculator from './pages/public/ShowerCableCalculator'
+import Bs7671Guide from './pages/public/Bs7671Guide'
+import Bs7671Tables from './pages/public/Bs7671Tables'
 import FeedbackWidget from './components/FeedbackWidget'
 import PwaInstallPrompt from './components/PwaInstallPrompt'
 import { supabase } from './lib/supabase'
@@ -67,6 +72,13 @@ export default function App() {
         {/* Public pages */}
         <Route path="/"        element={<Shell><Landing /></Shell>} />
         <Route path="/pricing" element={<Shell><Pricing /></Shell>} />
+
+        {/* Public content pages — no login required, compose their own chrome via PageShell */}
+        <Route path="/calculator/swa-armoured-cable-size"      element={<SwaArmouredCalculator />} />
+        <Route path="/calculator/voltage-drop"                 element={<VoltageDropCalculator />} />
+        <Route path="/calculator/shower-cable-size"             element={<ShowerCableCalculator />} />
+        <Route path="/guides/bs7671-cable-sizing-explained"     element={<Bs7671Guide />} />
+        <Route path="/tables/bs7671-cable-current-rating-tables" element={<Bs7671Tables />} />
 
         {/* Protected — require Supabase login */}
         <Route path="/calculator" element={<ProtectedShell><Calculator /></ProtectedShell>} />

@@ -730,6 +730,8 @@ html, body {
 .breadcrumb { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); display: flex; gap: 8px; align-items: center; }
 .breadcrumb .sep { color: var(--ink-4); }
 .breadcrumb .cur { color: var(--ink); }
+.breadcrumb a { color: var(--ink-3); text-decoration: none; }
+.breadcrumb a:hover { color: var(--ink); }
 
 .calc-head-row {
   display: flex;
@@ -967,6 +969,76 @@ html, body {
 .faq-item:hover { background: var(--surface-2); }
 .faq-q { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 500; color: var(--ink); }
 .faq-a { margin-top: 10px; font-size: 13px; color: var(--ink-2); line-height: 1.5; text-align: left; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CONTENT PAGES — guides, calculator landing pages, reference tables
+   Tailwind preflight strips default heading/paragraph styling, so these
+   long-form pages get their own scoped typography rather than inline
+   styles repeated across every guide.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.public-page { padding: 40px 0 90px; }
+.public-hero { max-width: 760px; margin: 0 0 40px; }
+.public-hero h1 {
+  font-size: clamp(28px, 3.4vw, 42px);
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 14px 0 14px;
+  text-wrap: balance;
+}
+.public-hero p { font-size: 16px; color: var(--ink-2); line-height: 1.55; max-width: 640px; }
+
+.article { max-width: 760px; margin: 56px 0 0; }
+.article h2 {
+  font-size: 24px; font-weight: 600; letter-spacing: -0.015em;
+  color: var(--ink); margin: 44px 0 14px;
+}
+.article h2:first-child { margin-top: 0; }
+.article h3 { font-size: 17px; font-weight: 600; color: var(--ink); margin: 26px 0 10px; }
+.article p { font-size: 15px; line-height: 1.7; color: var(--ink-2); margin: 0 0 14px; }
+.article ul, .article ol { margin: 0 0 14px; padding-left: 22px; }
+.article li { font-size: 15px; line-height: 1.7; color: var(--ink-2); margin-bottom: 6px; }
+.article code {
+  font-family: var(--font-mono); font-size: 13px; background: var(--surface-2);
+  border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px;
+}
+.article strong { color: var(--ink); font-weight: 600; }
+
+.data-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-lg); margin: 0 0 16px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table caption { text-align: left; padding: 14px 16px 0; font-size: 13px; color: var(--ink-2); caption-side: top; }
+.data-table th, .data-table td {
+  padding: 9px 14px; text-align: right; border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono); white-space: nowrap;
+}
+.data-table th { color: var(--ink-3); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; background: var(--surface-2); }
+.data-table td:first-child, .data-table th:first-child { text-align: left; color: var(--ink); font-weight: 500; }
+.data-table tbody tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover td { background: var(--surface-2); }
+
+.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 40px; }
+.toc a {
+  font-family: var(--font-mono); font-size: 12px; color: var(--ink-3);
+  border: 1px solid var(--line); border-radius: var(--r); padding: 6px 12px;
+  text-decoration: none; transition: all .15s;
+}
+.toc a:hover { color: var(--ink); border-color: var(--line-2); background: var(--surface-2); }
+
+.related-pages { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 56px 0 0; }
+.related-pages a {
+  display: block; border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 16px 18px; text-decoration: none; transition: all .15s;
+}
+.related-pages a:hover { border-color: var(--line-2); background: var(--surface-2); }
+.related-pages .label { font-size: 11px; font-family: var(--font-mono); color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+.related-pages .title { font-size: 14px; font-weight: 500; color: var(--ink); margin-top: 4px; }
+
+@media (max-width: 720px) {
+  .public-page { padding: 24px 0 60px; }
+  .data-table th, .data-table td { padding: 8px 10px; font-size: 12px; }
+}
 
 /* ═══════════════════════════════════════════════════════════════════════
    ADMIN PAGE — responsive grids

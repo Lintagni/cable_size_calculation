@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { Zap, Shield, CheckCircle, FileText, Clock, Cpu } from 'lucide-react'
+import Footer from '../components/Footer'
 
 const FEATURES = [
   { Icon: Zap,         title: 'LV cable sizing',   desc: 'Full BS7671:2018+A2 sizing with correction factors Ca, Cg, Ci, Cc and methods A–G.', code: '01' },
@@ -176,43 +177,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="footer">
-        <div className="container footer-inner">
-          <div className="footer-brand">
-            <div className="brand-mark">CC</div>
-            <div>
-              <div>CableCalc</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)' }}>BS7671 · NFC · IEC</div>
-            </div>
-          </div>
-          <div className="footer-cols">
-            <div>
-              <h5>Product</h5>
-              <Link to="/calculator">Calculator</Link>
-              <Link to="/calculator">AI assistant</Link>
-              <Link to="/dashboard">History</Link>
-              <Link to="/pricing">Pricing</Link>
-            </div>
-            <div>
-              <h5>Reference</h5>
-              <a>BS7671 tables</a>
-              <a>Methodology</a>
-              <a>Release notes</a>
-            </div>
-            <div>
-              <h5>Company</h5>
-              <a>About</a>
-              <a>Contact</a>
-              <a>Terms</a>
-            </div>
-          </div>
-        </div>
-        <div className="footer-bottom">
-          <span>© 2026 CableCalc Ltd.</span>
-          <span style={{ fontFamily: 'var(--font-mono)' }}>v3.2.1 · BS7671:2018+A2</span>
-        </div>
-      </footer>
+      <Footer />
     </div>
   )
 }
