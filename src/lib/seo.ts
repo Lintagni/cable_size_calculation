@@ -17,6 +17,10 @@ export interface RouteSeo {
   description: string
   /** Only routes marked prerender:true get a static HTML file at build time. */
   prerender: boolean
+  /** Emits <meta name="robots" content="noindex,follow">. */
+  noindex?: boolean
+  /** Overrides the dist/<path>/index.html output location for prerendering. */
+  outFile?: string
   jsonLd?: Record<string, unknown>[]
 }
 
@@ -118,13 +122,27 @@ export const ROUTES: RouteSeo[] = [
     ],
   },
   {
-    // Currently behind the auth wall, so there is nothing meaningful to
-    // prerender. Metadata is still applied client-side.
+    // Public since the auth wall was lifted: anonymous visitors and crawlers
+    // get pages/public/PublicCalculator, which is what gets prerendered here.
     path: '/calculator',
-    title: 'BS7671 Cable Sizing Calculator | CableCalc',
+    title: 'BS7671 Cable Size Calculator | Free, No Login | CableCalc',
     description:
-      'Size LV cables to BS7671 Appendix 4. Enter design current, installation method, length and grouping to get a compliant cable size with voltage drop and fault checks.',
-    prerender: false,
+      'Free BS7671:2018+A2 cable size calculator. Enter design current, installation method, length, ambient temperature and grouping for a compliant LV cable size with correction factors and voltage drop.',
+    prerender: true,
+    jsonLd: [
+      {
+        '@type': 'WebApplication',
+        name: 'BS7671 Cable Size Calculator',
+        url: `${SITE_URL}/calculator`,
+        applicationCategory: 'EngineeringApplication',
+        operatingSystem: 'Web browser',
+        isPartOf: { '@id': `${SITE_URL}/#website` },
+        publisher: { '@id': `${SITE_URL}/#organization` },
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'GBP' },
+        description:
+          'Browser-based BS7671 Appendix 4 cable sizing calculator: tabulated current rating, Ca / Cg / Ci correction factors, derated capacity Iz and voltage drop to Section 525.',
+      },
+    ],
   },
   {
     path: '/calculator/swa-armoured-cable-size',
@@ -208,6 +226,40 @@ export const ROUTES: RouteSeo[] = [
     ],
   },
   {
+    path: '/methodology',
+    title: 'How CableCalc Calculates | BS7671 Methodology | CableCalc',
+    description:
+      'The standard, tables and arithmetic behind the calculator: BS7671:2018+A2 Appendix 4, Regulation 433.1.1 and Section 525 — and what is deliberately not implemented.',
+    prerender: true,
+    jsonLd: [
+      {
+        '@type': 'TechArticle',
+        headline: 'How CableCalc Calculates',
+        url: `${SITE_URL}/methodology`,
+        isPartOf: { '@id': `${SITE_URL}/#website` },
+        about: { '@id': `${SITE_URL}/#software` },
+        publisher: { '@id': `${SITE_URL}/#organization` },
+      },
+    ],
+  },
+  {
+    path: '/verification',
+    title: 'Worked Examples, Checked Step by Step | CableCalc',
+    description:
+      'Five BS7671 cable sizing cases run through the live engine with every correction factor, derated capacity and voltage drop printed, so each step can be checked against the standard.',
+    prerender: true,
+    jsonLd: [
+      {
+        '@type': 'TechArticle',
+        headline: 'Worked Examples, Checked Step by Step',
+        url: `${SITE_URL}/verification`,
+        isPartOf: { '@id': `${SITE_URL}/#website` },
+        about: { '@id': `${SITE_URL}/#software` },
+        publisher: { '@id': `${SITE_URL}/#organization` },
+      },
+    ],
+  },
+  {
     path: '/ai',
     title: 'AI Cable Sizing Assistant | CableCalc',
     description:
@@ -220,12 +272,28 @@ export const ROUTES: RouteSeo[] = [
     description: 'Your saved BS7671 cable sizing calculations.',
     prerender: false,
   },
+  {
+    // Prerendered to dist/404.html rather than dist/404/index.html so Vercel
+    // serves it with a real 404 status for unmatched paths.
+    path: '/404',
+    title: 'Page not found | CableCalc',
+    description: 'That page does not exist on CableCalc.',
+    prerender: true,
+    noindex: true,
+    outFile: '404.html',
+  },
 ]
 
 export const DEFAULT_SEO = ROUTES[0]
+export const NOT_FOUND_SEO = ROUTES.find(r => r.path === '/404')!
 
+/**
+ * Unknown paths resolve to the 404 entry, not the home page. Returning
+ * DEFAULT_SEO here previously gave every bad URL the home page's title and
+ * canonical, which is what made them look like indexable duplicates.
+ */
 export function seoForPath(pathname: string): RouteSeo {
-  return ROUTES.find(r => r.path === pathname) ?? DEFAULT_SEO
+  return ROUTES.find(r => r.path === pathname) ?? NOT_FOUND_SEO
 }
 
 /** Wrap the route's JSON-LD blocks in a single @graph document. */

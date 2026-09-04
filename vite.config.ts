@@ -31,11 +31,17 @@ export default defineConfig({
       workbox: {
         // Cache all static assets
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // Don't cache Supabase or API calls — they must stay live.
-        // /pricing is prerendered to its own HTML file (scripts/prerender.mjs);
-        // let it hit the network so the SW doesn't serve the homepage shell
-        // in its place.
-        navigateFallbackDenylist: [/^\/api\//, /^\/pricing\/?$/],
+        // The navigate fallback serves dist/index.html — which is the
+        // prerendered HOME PAGE, not an empty shell. Falling back to it for
+        // every navigation meant a returning visitor with the SW installed got
+        // the home page at /calculator and at every content URL. Only the four
+        // client-only routes have no HTML file of their own, so only they may
+        // use the fallback; everything else hits the network and gets its own
+        // prerendered file (or a real 404).
+        //
+        // Keep in sync with the SPA rewrites in vercel.json.
+        navigateFallbackAllowlist: [/^\/(ai|dashboard|admin|payment-success)\/?$/],
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
             // Google Fonts stylesheets — cache for a year

@@ -11,6 +11,10 @@ import VoltageDropCalculator from './pages/public/VoltageDropCalculator'
 import ShowerCableCalculator from './pages/public/ShowerCableCalculator'
 import Bs7671Guide from './pages/public/Bs7671Guide'
 import Bs7671Tables from './pages/public/Bs7671Tables'
+import PublicCalculator from './pages/public/PublicCalculator'
+import Methodology from './pages/public/Methodology'
+import Verification from './pages/public/Verification'
+import NotFound from './pages/NotFound'
 // Re-exported so scripts/prerender.mjs has a single entry point to import.
 export { ROUTES, SITE_URL, SITE_NAME, OG_IMAGE, jsonLdFor } from './lib/seo'
 
@@ -32,6 +36,10 @@ const SHELL_WRAPPED: Record<string, React.ComponentType> = {
 }
 
 const SELF_CONTAINED: Record<string, React.ComponentType> = {
+  '/calculator': PublicCalculator,
+  '/methodology': Methodology,
+  '/verification': Verification,
+  '/404': NotFound,
   '/calculator/swa-armoured-cable-size': SwaArmouredCalculator,
   '/calculator/voltage-drop': VoltageDropCalculator,
   '/calculator/shower-cable-size': ShowerCableCalculator,

@@ -281,3 +281,34 @@ export const REFERENCE_METHODS = [
   { code: 'F',  description: 'Free air (single-core trefoil)' },
   { code: 'G',  description: 'Free air (single-core flat spaced)' },
 ];
+
+/**
+ * Reference methods the loaded data can actually serve.
+ *
+ * Derived from the tables rather than hard-coded, so it can never claim
+ * coverage the data does not have. Offering a method with no tabulated column
+ * produces a silent "no rating exists" dead end, which is worse than not
+ * offering it: the user cannot tell a missing table from an impossible circuit.
+ *
+ * KNOWN GAP: no table currently carries D1, D2 (buried / in duct in ground) or
+ * G (single-core free air, flat spaced) columns, so those installations cannot
+ * be sized. Buried SWA is a common UK case — adding the Appendix 4 D1/D2
+ * columns is the highest-value data work outstanding. The values must be
+ * transcribed from BS7671:2018+A2; do not interpolate or estimate them.
+ */
+export function supportedMethods(
+  insulation: InsulationType,
+  config: CableConfig,
+  material: ConductorMaterial = 'copper',
+): string[] {
+  const table = material === 'aluminium'
+    ? (insulation === 'PVC'
+        ? (config === 'multicore' ? table4D3A : table4D4A)
+        : (config === 'multicore' ? table4E3A : table4E4A))
+    : (insulation === 'PVC'
+        ? (config === 'multicore' ? table4D1A : table4D2A)
+        : (config === 'multicore' ? table4E1A : table4E2A));
+
+  const keys: (keyof CableTableEntry)[] = ['A1', 'A2', 'B1', 'B2', 'C', 'D1', 'D2', 'E', 'F', 'G'];
+  return keys.filter(k => table.some(row => row[k] !== undefined)) as string[];
+}

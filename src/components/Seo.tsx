@@ -12,14 +12,31 @@ function upsertMeta(key: 'name' | 'property', value: string, content: string) {
   el.setAttribute('content', content)
 }
 
-function upsertCanonical(href: string) {
+function upsertCanonical(href: string | null) {
   let el = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]')
+  // A noindex page passes null: self-canonicalising an arbitrary bad URL to
+  // /404 would just point Google at another page it must not index.
+  if (!href) {
+    el?.remove()
+    return
+  }
   if (!el) {
     el = document.createElement('link')
     el.rel = 'canonical'
     document.head.appendChild(el)
   }
   el.href = href
+}
+
+function upsertRobots(noindex: boolean) {
+  const el = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]')
+  if (!noindex) {
+    el?.remove()
+    return
+  }
+  const tag = el ?? document.head.appendChild(document.createElement('meta'))
+  tag.setAttribute('name', 'robots')
+  tag.setAttribute('content', 'noindex,follow')
 }
 
 function upsertJsonLd(json: string | null) {
@@ -51,7 +68,8 @@ export default function Seo() {
 
     document.title = route.title
     upsertMeta('name', 'description', route.description)
-    upsertCanonical(url)
+    upsertCanonical(route.noindex ? null : url)
+    upsertRobots(Boolean(route.noindex))
 
     upsertMeta('property', 'og:title', route.title)
     upsertMeta('property', 'og:description', route.description)

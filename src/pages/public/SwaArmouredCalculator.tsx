@@ -5,12 +5,14 @@ import Faq from '../../components/public/Faq'
 import Footer from '../../components/Footer'
 import type { RefMethod } from '../../calculators/lvCableSizing'
 
-const METHODS: RefMethod[] = ['C', 'D1', 'D2', 'B2']
+// D1/D2 (buried / in duct) are omitted: no Appendix 4 table in the loaded
+// data carries those columns yet, so offering them returns no rating.
+const METHODS: RefMethod[] = ['C', 'B2', 'B1']
 
 const FAQ_ITEMS = [
   {
     q: 'Does the steel armour itself affect the current rating?',
-    a: "BS7671 Appendix 4 doesn't publish a separate table for armoured versus unarmoured cable — SWA (PVC/SWA/PVC to BS6346, or XLPE/SWA/PVC to BS5467) is rated using the same general multicore tables as any other cable of that insulation type, under whichever reference method matches how it's actually installed. Method C (clipped direct) and D1/D2 (in duct or direct buried) are the two most common for SWA runs.",
+    a: "BS7671 Appendix 4 doesn't publish a separate table for armoured versus unarmoured cable — SWA (PVC/SWA/PVC to BS6346, or XLPE/SWA/PVC to BS5467) is rated using the same general multicore tables as any other cable of that insulation type, under whichever reference method matches how it's actually installed. Method C (clipped direct) and D1/D2 (in duct or direct buried) are the two most common for SWA runs; note that D1/D2 are not yet implemented in this calculator.",
   },
   {
     q: 'What size SWA cable do I need for a garage or outbuilding supply?',
@@ -49,7 +51,9 @@ export default function SwaArmouredCalculator() {
           doesn't get its own current-rating table. What matters for sizing is the conductor
           material, the insulation type (PVC 70°C or XLPE 90°C), and the installation
           method — most commonly <strong>method C</strong> (clipped direct to a wall, tray or
-          surface) or <strong>method D1/D2</strong> (in a buried duct, or direct buried).
+          surface) or <strong>method B1/B2</strong> (in conduit or trunking on a wall).
+          Buried methods D1 and D2 are not yet available in this calculator; see{' '}
+          <Link to="/methodology">how it calculates</Link> for the current scope.
         </p>
 
         <h3>The sizing sequence</h3>

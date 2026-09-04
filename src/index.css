@@ -1332,3 +1332,197 @@ html, body {
   .compare-table    { overflow-x: auto; }
   .faq-grid         { grid-template-columns: 1fr; }
 }
+
+/* ── Size selection ladder ────────────────────────────────────────────────── */
+/* The rejected-sizes table. Shown by default in the results panel and on the
+   public calculator pages: the reasoning is the differentiator, so it should
+   not be hidden behind a toggle. */
+.size-ladder {
+  border-top: 1px solid var(--line);
+  padding: 18px 22px 20px;
+}
+.size-ladder-head h4 {
+  font-size: 11px; font-weight: 500; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 6px;
+}
+.size-ladder-head p {
+  font-size: 12.5px; line-height: 1.55; color: var(--ink-2); margin: 0 0 14px;
+}
+.size-ladder-scroll { overflow-x: auto; }
+.size-ladder-table {
+  width: 100%; border-collapse: collapse;
+  font-family: var(--font-mono); font-size: 12px;
+}
+.size-ladder-table th {
+  text-align: left; font-weight: 500; font-size: 10px;
+  color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 6px 10px 6px 0; border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.size-ladder-table td {
+  padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line);
+  color: var(--ink-2); white-space: nowrap;
+}
+.size-ladder-table tbody tr:last-child td { border-bottom: none; }
+.size-ladder-table tr.selected td { color: var(--ink); font-weight: 600; }
+.size-ladder-table td.csa { color: var(--ink); }
+.size-ladder-table td.pass { color: var(--ok); }
+.size-ladder-table td.fail { color: var(--fail); }
+.size-ladder-table .pick {
+  display: inline-block; margin-left: 8px; padding: 1px 6px;
+  font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase;
+  border-radius: 4px; background: var(--accent-soft);
+  color: var(--accent-ink); border: 1px solid var(--accent-line);
+}
+.size-ladder-table .outcome-col {
+  font-family: var(--font-sans); white-space: normal; min-width: 190px;
+}
+.size-ladder-note {
+  font-size: 11px; line-height: 1.5; color: var(--ink-4); margin: 12px 0 0;
+}
+@media (max-width: 720px) {
+  .size-ladder { padding: 16px; }
+  .size-ladder-table .outcome-col { display: none; }
+}
+
+/* ── Distribution board schedule ──────────────────────────────────────────── */
+.board { padding-bottom: 24px; }
+.board .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.board-scroll { overflow-x: auto; border-top: 1px solid var(--line); }
+.board-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.board-table th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--surface-2); text-align: left; white-space: nowrap;
+  font-size: 10px; font-weight: 500; color: var(--ink-3);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 9px 8px; border-bottom: 1px solid var(--line);
+}
+.board-table td {
+  padding: 4px 8px; border-bottom: 1px solid var(--line);
+  vertical-align: middle; white-space: nowrap;
+}
+.board-table tr.row-fail td { background: color-mix(in oklch, var(--fail) 7%, transparent); }
+.board-table td.derived { font-family: var(--font-mono); color: var(--ink-2); }
+.board-table td.derived.strong { color: var(--ink); font-weight: 600; }
+.board-table .pass { color: var(--ok); }
+.board-table .fail { color: var(--fail); }
+.cell-input {
+  width: 100%; min-width: 60px; background: transparent;
+  border: 1px solid transparent; border-radius: 5px; padding: 5px 6px;
+  color: var(--ink); font-size: 12px; font-family: inherit;
+}
+.cell-input:hover { border-color: var(--line); }
+.cell-input:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+.cell-input.num { font-family: var(--font-mono); text-align: right; min-width: 62px; }
+.cell-input.narrow { min-width: 64px; }
+.cell-input.wide { min-width: 150px; }
+.icon-btn {
+  display: grid; place-items: center; width: 26px; height: 26px;
+  border: 1px solid transparent; border-radius: 5px;
+  background: none; color: var(--ink-3); cursor: pointer;
+}
+.icon-btn:hover:not(:disabled) { border-color: var(--line); color: var(--ink); background: var(--surface-2); }
+.icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.board-foot {
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  padding: 16px 22px; border-top: 1px solid var(--line);
+}
+.board-totals { display: flex; gap: 26px; flex-wrap: wrap; flex: 1; }
+.board-totals div { display: flex; flex-direction: column; gap: 3px; }
+.board-totals span {
+  font-size: 10px; font-family: var(--font-mono); color: var(--ink-4);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.board-totals strong { font-family: var(--font-mono); font-size: 15px; color: var(--ink); }
+.board-totals strong.pass { color: var(--ok); }
+.board-totals strong.fail { color: var(--fail); }
+.board-note {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 12px 22px 16px; font-size: 12px; line-height: 1.55; color: var(--ink-3);
+}
+.board-note svg { flex-shrink: 0; margin-top: 2px; color: var(--accent-ink); }
+.board-disclaimer {
+  font-size: 12px; line-height: 1.6; color: var(--ink-4);
+  margin: 16px 0 0; max-width: 720px;
+}
+@media (max-width: 900px) {
+  .board .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .board-foot { flex-direction: column; align-items: stretch; }
+  .board-totals { gap: 16px; }
+}
+
+/* ── Calculator workspace: project meta bar ───────────────────────────────── */
+/* Was an inline 5-column grid, which forced a desktop layout onto phones.
+   Electricians check sizes standing in a plant room, so this wraps instead. */
+.calc-meta-bar {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.calc-meta-cell { padding: 10px 16px; border-right: 1px solid var(--line); }
+.calc-meta-cell:last-child { border-right: none; }
+
+/* ── Calculator workspace: mobile ─────────────────────────────────────────── */
+@media (max-width: 900px) {
+  /* Results stop being a sidebar and stack under the inputs. */
+  .calc-body { grid-template-columns: minmax(0, 1fr); gap: 16px; padding-top: 20px; }
+  .results-sticky { position: static; }
+  .calc-meta-bar { grid-template-columns: 1fr 1fr; }
+  .calc-meta-cell:nth-child(2n) { border-right: none; }
+  .calc-meta-cell { border-bottom: 1px solid var(--line); }
+  .calc-meta-cell:nth-last-child(-n+1) { border-bottom: none; }
+}
+@media (max-width: 720px) {
+  .calc-head .container { padding-top: 16px; }
+  .calc-head-row { flex-direction: column; align-items: stretch; gap: 12px; }
+  .calc-head-row h1 { font-size: 21px; }
+  .calc-head-actions { flex-wrap: wrap; }
+  .calc-head-actions .btn { flex: 1; justify-content: center; }
+  .calc-meta-bar { grid-template-columns: 1fr; }
+  .calc-meta-cell { border-right: none; }
+  /* Board schedule can't usefully reflow — let it scroll as a table. */
+  .board-scroll { -webkit-overflow-scrolling: touch; }
+  .board-table { min-width: 900px; }
+}
+
+/* ── Worked examples (verification page) ──────────────────────────────────── */
+.worked-examples { display: flex; flex-direction: column; gap: 20px; margin-top: 44px; }
+.worked-example {
+  border: 1px solid var(--line); border-radius: var(--r-lg);
+  background: var(--surface); padding: 22px;
+}
+.worked-example h3 { font-size: 16px; font-weight: 600; color: var(--ink); margin: 0 0 6px; }
+.we-brief { font-size: 14px; line-height: 1.6; color: var(--ink-2); margin: 0 0 16px; }
+.we-given {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 2px 20px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.we-given-row {
+  display: flex; justify-content: space-between; gap: 12px;
+  font-size: 12.5px; padding: 3px 0;
+}
+.we-given-row span { color: var(--ink-3); }
+.we-given-row strong { font-family: var(--font-mono); color: var(--ink); font-weight: 600; text-align: right; }
+.we-steps { margin: 16px 0 0; padding-left: 20px; }
+.we-steps li { font-size: 14px; line-height: 1.75; color: var(--ink-2); margin-bottom: 10px; }
+.we-steps strong { color: var(--ink); }
+.we-verdict {
+  margin-top: 16px; padding: 11px 14px; border-radius: var(--r);
+  font-size: 13.5px; font-weight: 600;
+}
+.we-verdict.ok  { background: var(--ok-soft, color-mix(in oklch, var(--ok) 12%, transparent)); color: var(--ok); }
+.we-verdict.bad { background: var(--fail-soft, color-mix(in oklch, var(--fail) 12%, transparent)); color: var(--fail); }
+@media (max-width: 720px) {
+  .worked-example { padding: 16px; }
+  .we-given { grid-template-columns: 1fr; }
+}
+
+.footer-disclaimer {
+  font-size: 12px; line-height: 1.65; color: var(--ink-4);
+  padding-top: 20px; padding-bottom: 4px; max-width: 780px;
+}
+.footer-disclaimer a { color: var(--ink-3); text-decoration: underline; }
+.footer-disclaimer a:hover { color: var(--ink-2); }

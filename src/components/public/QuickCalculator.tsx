@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { CheckCircle, XCircle, ArrowRight } from 'lucide-react'
 import { calculate, type LvCableInput, type RefMethod } from '../../calculators/lvCableSizing'
-import { REFERENCE_METHODS } from '../../data/cableTables'
+import { REFERENCE_METHODS, supportedMethods } from '../../data/cableTables'
+import SizeLadder from '../calculator/SizeLadder'
+import ShareButton from '../calculator/ShareButton'
+import { decodeInputs } from '../../lib/shareLink'
 
 /**
  * Public, no-login BS7671 sizing calculator embedded on content landing pages.
@@ -40,7 +43,14 @@ interface Props {
   methods?: RefMethod[]
   /** Short line explaining what the preset has assumed. */
   note?: string
+  /**
+   * Link shown under the result. Defaults to the full calculator; pass null on
+   * /calculator itself, where that would be a self-link.
+   */
+  cta?: { to: string; label: string } | null
 }
+
+const DEFAULT_CTA = { to: '/calculator', label: 'Full calculator — fault current, PDF export' }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -60,8 +70,14 @@ function Spec({ k, v, ok, fail }: { k: string; v: string; ok?: boolean; fail?: b
   )
 }
 
-export default function QuickCalculator({ preset, methods, note }: Props) {
-  const [input, setInput] = useState<LvCableInput>({ ...BASE_INPUT, ...preset })
+export default function QuickCalculator({ preset, methods, note, cta = DEFAULT_CTA }: Props) {
+  const { search } = useLocation()
+  // A shared link wins over the page preset, so the recipient sees the sender's
+  // case rather than this page's default. Read once — later edits are the
+  // user's, and rewriting the URL as they type would fight the browser history.
+  const [input, setInput] = useState<LvCableInput>(
+    () => ({ ...BASE_INPUT, ...preset, ...decodeInputs(search) }),
+  )
 
   function set<K extends keyof LvCableInput>(key: K, value: LvCableInput[K]) {
     setInput(prev => ({ ...prev, [key]: value }))
@@ -76,7 +92,12 @@ export default function QuickCalculator({ preset, methods, note }: Props) {
     }
   }, [input])
 
-  const methodList = methods ?? (['C', 'B1', 'B2', 'D1', 'D2', 'E', 'F'] as RefMethod[])
+  // Only offer methods the loaded tables can actually rate for this cable type.
+  // Offering D1/D2 with no data behind them produced a silent dead end.
+  const available = supportedMethods(input.insulation, input.cableConfig, input.conductorMaterial)
+  const methodList = (methods ?? (['C', 'B1', 'B2', 'E', 'F'] as RefMethod[]))
+    .filter(m => available.includes(m))
+  const effectiveMethods: RefMethod[] = methodList.length ? methodList : (available as RefMethod[])
   const r = result?.results
   const cf = result?.correctionFactors
 
@@ -144,7 +165,7 @@ export default function QuickCalculator({ preset, methods, note }: Props) {
               value={input.referenceMethod}
               onChange={e => set('referenceMethod', e.target.value as RefMethod)}
             >
-              {methodList.map(m => {
+              {effectiveMethods.map(m => {
                 const meta = REFERENCE_METHODS.find(x => x.code === m)
                 return <option key={m} value={m}>{m} — {meta?.description ?? m}</option>
               })}
@@ -224,6 +245,10 @@ export default function QuickCalculator({ preset, methods, note }: Props) {
               </ul>
             )}
 
+            <div style={{ marginTop: 18, marginLeft: -22, marginRight: -22 }}>
+              <SizeLadder result={result} />
+            </div>
+
             <p style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 18, lineHeight: 1.6 }}>
               Iz = It × Ca × Cg × Ci × Cc. Voltage drop uses the mV/A/m figures from
               BS7671 Appendix 4 and is checked against the 5% limit in Section 525 for
@@ -231,9 +256,15 @@ export default function QuickCalculator({ preset, methods, note }: Props) {
               fault current — use the full calculator for those.
             </p>
 
-            <Link to="/calculator" className="btn btn-accent" style={{ marginTop: 16 }}>
-              Full calculator — fault current, PDF export <ArrowRight size={14} />
-            </Link>
+            <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <ShareButton input={input} />
+            </div>
+
+            {cta && (
+              <Link to={cta.to} className="btn btn-accent" style={{ marginTop: 16 }}>
+                {cta.label} <ArrowRight size={14} />
+              </Link>
+            )}
           </div>
         ) : (
           <p style={{ marginTop: 20, fontSize: 13, color: 'var(--ink-3)' }}>

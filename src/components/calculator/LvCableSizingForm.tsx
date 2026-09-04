@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { CheckCircle, XCircle, ChevronDown, ChevronUp, Download } from 'lucide-react'
 import { calculate, type LvCableInput } from '../../calculators/lvCableSizing'
-import { REFERENCE_METHODS } from '../../data/cableTables'
+import { REFERENCE_METHODS, supportedMethods } from '../../data/cableTables'
 import ResultExplainer from '../AiAssistant/ResultExplainer'
+import SizeLadder from './SizeLadder'
+import ShareButton from './ShareButton'
+import { decodeInputs } from '../../lib/shareLink'
 import type { LvCableResult } from '../../calculators/lvCableSizing'
 
 interface Props {
@@ -80,7 +84,9 @@ function Spec({ k, v, ok, fail, accent }: { k: string; v: string | number; ok?: 
 
 // ── Main form ─────────────────────────────────────────────────────────────────
 export default function LvCableSizingForm({ externalInputs, onResultChange }: Props) {
-  const [input, setInput] = useState<LvCableInput>(defaultInput)
+  const { search } = useLocation()
+  // Seed from a shared link when one is present; otherwise the usual blank form.
+  const [input, setInput] = useState<LvCableInput>(() => ({ ...defaultInput, ...decodeInputs(search) }))
   const [result, setResult] = useState<LvCableResult | null>(null)
   const [showAll, setShowAll] = useState(false)
   const [aiApplied, setAiApplied] = useState(false)
@@ -241,11 +247,11 @@ export default function LvCableSizingForm({ externalInputs, onResultChange }: Pr
                 onChange={e => set('referenceMethod', e.target.value as LvCableInput['referenceMethod'])}
                 className="cc-select"
               >
+                {/* Derived from the loaded tables, not hard-coded: the previous
+                    list offered D1/D2/G, for which no table has data, so those
+                    selections silently returned "no tabulated rating". */}
                 {REFERENCE_METHODS
-                  .filter(m => input.cableConfig === 'single-core'
-                    ? ['B1','C','D1','E','F','G'].includes(m.code)
-                    : ['A1','A2','B1','B2','C','D1','D2'].includes(m.code)
-                  )
+                  .filter(m => supportedMethods(input.insulation, input.cableConfig, input.conductorMaterial).includes(m.code))
                   .map(m => (
                     <option key={m.code} value={m.code}>{m.code} — {m.description}</option>
                   ))}
@@ -440,6 +446,13 @@ function ResultsPane({ result, showAll, onToggleAll }: {
           ))}
         </div>
       )}
+
+      {/* Why this size — the rejected candidates and the binding constraint */}
+      <SizeLadder result={result} />
+
+      <div style={{ padding: '0 22px 18px' }}>
+        <ShareButton input={result.input} />
+      </div>
 
       {/* All cable sizes toggle */}
       <div style={{ borderTop: '1px solid var(--line)' }}>

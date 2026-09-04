@@ -35,8 +35,18 @@ export default function Footer() {
             <h5>Reference</h5>
             <Link to="/guides/bs7671-cable-sizing-explained">BS7671 sizing explained</Link>
             <Link to="/tables/bs7671-cable-current-rating-tables">Current rating tables</Link>
+            <Link to="/methodology">How it calculates</Link>
+            <Link to="/verification">Worked examples</Link>
           </div>
         </div>
+      </div>
+      {/* Stated plainly rather than buried in terms: professionals trust a tool
+          more when it is honest about where its responsibility ends. */}
+      <div className="container footer-disclaimer">
+        Calculated to BS7671:2018+A2. CableCalc is a design aid, not a substitute for a
+        competent designer — the person signing the certificate remains responsible for the
+        design under BS7671. See <Link to="/methodology">how it calculates</Link> and the{' '}
+        <Link to="/verification">worked examples</Link>.
       </div>
       <div className="footer-bottom">
         <span>© 2026 CableCalc Ltd.</span>

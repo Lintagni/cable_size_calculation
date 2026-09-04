@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Zap, TrendingDown, AlertTriangle, Cpu, Radio,
-  LayoutGrid, ChevronRight, Lock, ArrowUpRight, Download, Sparkles, Clock,
+  LayoutGrid, ChevronRight, Lock, ArrowUpRight, Download, Sparkles, Clock, Table2,
 } from 'lucide-react'
 import LvCableSizingForm from '../components/calculator/LvCableSizingForm'
 import VoltageDropForm from '../components/calculator/VoltageDropForm'
@@ -10,6 +10,7 @@ import ShortCircuitForm from '../components/calculator/ShortCircuitForm'
 import MotorCableForm from '../components/calculator/MotorCableForm'
 import AbcCableForm from '../components/calculator/AbcCableForm'
 import BusbarForm from '../components/calculator/BusbarForm'
+import BoardForm from '../components/calculator/BoardForm'
 import { useActivePlan } from '../store/planStore'
 import { useAiQuotaStore, getRemaining, PLAN_MONTHLY_QUOTA } from '../store/aiQuotaStore'
 import { useHistoryStore } from '../store/historyStore'
@@ -20,7 +21,7 @@ import type { BusbarInput } from '../calculators/busbarSizing'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Plan  = 'free' | 'pro' | 'business'
-type TabId = 'lv' | 'vdrop' | 'sc' | 'motor' | 'abc' | 'busbar'
+type TabId = 'lv' | 'vdrop' | 'board' | 'sc' | 'motor' | 'abc' | 'busbar'
 
 const PLAN_RANK: Record<Plan, number> = { free: 0, pro: 1, business: 2 }
 function planAllows(userPlan: Plan, minPlan: string) {
@@ -30,6 +31,7 @@ function planAllows(userPlan: Plan, minPlan: string) {
 const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ size?: number }>; minPlan: string }[] = [
   { id: 'lv',     label: 'LV Cable',      Icon: Zap,           minPlan: 'free' },
   { id: 'vdrop',  label: 'Voltage Drop',  Icon: TrendingDown,  minPlan: 'free' },
+  { id: 'board',  label: 'Board Schedule', Icon: Table2,      minPlan: 'pro'  },
   { id: 'sc',     label: 'Short Circuit', Icon: AlertTriangle, minPlan: 'pro'  },
   { id: 'motor',  label: 'Motor Cable',   Icon: Cpu,           minPlan: 'pro'  },
   { id: 'abc',    label: 'ABC Cable',     Icon: Radio,         minPlan: 'business' },
@@ -37,7 +39,7 @@ const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ size?: numbe
 ]
 
 const TAB_LABELS: Record<TabId, string> = {
-  lv: 'LV Cable Sizing', vdrop: 'Voltage Drop',
+  lv: 'LV Cable Sizing', vdrop: 'Voltage Drop', board: 'Board Schedule',
   sc: 'Short Circuit', motor: 'Motor Cable',
   abc: 'ABC Cable', busbar: 'Busbar Sizing',
 }
@@ -45,6 +47,7 @@ const TAB_LABELS: Record<TabId, string> = {
 const TAB_DESC: Record<TabId, string> = {
   lv:     'Single-circuit sizing per BS7671 Appendix 4. Inputs update results live.',
   vdrop:  'Voltage drop check per BS7671 Section 525.',
+  board:  'Size a whole distribution board at once. Grouping is derived from shared containment routes.',
   sc:     'IPSSC calculation and adiabatic withstand check.',
   motor:  'Derive design current from motor kW, efficiency and power factor.',
   abc:    'Aerial Bundle Conductor sizing per NFC 33-209.',
@@ -113,6 +116,8 @@ export default function Calculator() {
   const [busbarInputs, setBusbarInputs] = useState<Partial<BusbarInput> | null>(null)
   const [meta, setMeta]                 = useState<Meta>({ project: '', circuitId: '', designer: '', system: 'TN-S 400V 3ph' })
   const [lastUpdated, setLastUpdated]   = useState<number | null>(null)
+  const [exporting, setExporting]       = useState(false)
+  const [exportError, setExportError]   = useState<string | null>(null)
 
   const aiQuota     = PLAN_MONTHLY_QUOTA[plan as Plan]
   const aiRemaining = getRemaining(record, plan as Plan)
@@ -144,6 +149,33 @@ export default function Calculator() {
 
   function setMetaField(key: keyof Meta, val: string) {
     setMeta(prev => ({ ...prev, [key]: val }))
+  }
+
+  // ── PDF export ──
+  // Only the LV tab tracks a result object at this level, so that is the only
+  // tab that can produce a report from here. The other tabs export from their
+  // own result cards.
+  const isPro     = planAllows(plan as Plan, 'pro')
+  const canExport = active === 'lv' && !!currentResult && isPro
+  const exportHint = active !== 'lv'
+    ? 'PDF export is available from the LV Cable tab'
+    : !currentResult ? 'Run a calculation first'
+    : !isPro ? 'PDF export requires the Pro plan'
+    : 'Download a BS7671 calculation sheet for this circuit'
+
+  async function handleExportPdf() {
+    if (!currentResult || !canExport) return
+    setExporting(true)
+    try {
+      const { generateReport } = await import('../lib/generateReport')
+      await generateReport({ type: 'lv', result: currentResult }, meta)
+    } catch (err) {
+      console.error('PDF export failed', err)
+      setExportError('Could not generate the PDF. Please try again.')
+      setTimeout(() => setExportError(null), 5000)
+    } finally {
+      setExporting(false)
+    }
   }
 
   function timeAgo(ts: number) {
@@ -193,37 +225,34 @@ export default function Calculator() {
                   </span>
                 )}
               </Link>
-              <button className="btn btn-primary">
-                <Download size={14} /> Export PDF
+              <button
+                className="btn btn-primary"
+                onClick={handleExportPdf}
+                disabled={!canExport || exporting}
+                title={exportHint}
+              >
+                <Download size={14} /> {exporting ? 'Generating…' : 'Export PDF'}
               </button>
             </div>
           </div>
 
+          {exportError && (
+            <div style={{ color: 'var(--fail)', fontSize: 12, marginBottom: 8 }}>{exportError}</div>
+          )}
+
           {/* Project meta bar */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr',
-            gap: 0,
-            background: 'var(--surface)',
-            border: '1px solid var(--line)',
-            borderRadius: 'var(--r)',
-            overflow: 'hidden',
-            marginBottom: 4,
-          }}>
+          <div className="calc-meta-bar">
             {[
               { label: 'Project',      key: 'project'   as keyof Meta },
               { label: 'Circuit ID',   key: 'circuitId' as keyof Meta },
               { label: 'Designer',     key: 'designer'  as keyof Meta },
               { label: 'System',       key: 'system'    as keyof Meta },
-            ].map((f, i) => (
-              <div key={f.key} style={{
-                padding: '10px 16px',
-                borderRight: i < 3 ? '1px solid var(--line)' : 'none',
-              }}>
+            ].map(f => (
+              <div key={f.key} className="calc-meta-cell">
                 <MetaField label={f.label} value={meta[f.key]} onChange={v => setMetaField(f.key, v)} />
               </div>
             ))}
-            <div style={{ padding: '10px 16px' }}>
+            <div className="calc-meta-cell">
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                 Last Updated
               </div>
@@ -267,6 +296,7 @@ export default function Calculator() {
         <div className="container" style={{ paddingTop: 32, paddingBottom: 48 }}>
           {active === 'lv'     && <LvCableSizingForm externalInputs={lvInputs} onResultChange={setCurrentResult} />}
           {active === 'vdrop'  && <VoltageDropForm />}
+          {active === 'board'  && (planAllows(plan as Plan, 'pro')      ? <BoardForm />       : <UpgradeBanner tier="pro" />)}
           {active === 'sc'     && (planAllows(plan as Plan, 'pro')      ? <ShortCircuitForm /> : <UpgradeBanner tier="pro" />)}
           {active === 'motor'  && (planAllows(plan as Plan, 'pro')      ? <MotorCableForm />  : <UpgradeBanner tier="pro" />)}
           {active === 'abc'    && (planAllows(plan as Plan, 'business') ? <AbcCableForm externalInputs={abcInputs} /> : <UpgradeBanner tier="business" />)}

@@ -8,11 +8,17 @@
  * The client still boots normally via createRoot() and replaces the markup —
  * this is prerendering for crawlers, not hydration.
  *
- * When adding a prerendered route, also add a matching rewrite in vercel.json
- * ABOVE the SPA catch-all, e.g.
- *   { "source": "/guides/x", "destination": "/guides/x/index.html" }
- * Vercel checks the filesystem before rewrites so this is belt-and-braces,
- * but it makes the routing explicit rather than order-dependent.
+ * vercel.json enumerates every valid route explicitly — there is no SPA
+ * catch-all. A `/((?!api).*)` catch-all used to send every unknown URL to
+ * dist/index.html, which IS the prerendered home page, so bogus URLs returned
+ * 200 with the home page's content and canonical tag. Now anything unmatched
+ * falls through to dist/404.html (written from the noindex /404 route below)
+ * and gets a real 404 status.
+ *
+ * So when adding a route, update BOTH:
+ *   - src/App.tsx           (client route)
+ *   - vercel.json rewrites  (prerendered -> /path/index.html, SPA -> /index.html)
+ * and mark it prerender:true in src/lib/seo.ts if it should be crawlable.
  */
 import { build } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -35,7 +41,11 @@ function headTags(route, { SITE_URL, SITE_NAME, OG_IMAGE, jsonLdFor }) {
   return [
     `<title>${t}</title>`,
     `<meta name="description" content="${d}" />`,
-    `<link rel="canonical" href="${url}" />`,
+    // A noindex page gets no canonical: it is served for arbitrary unmatched
+    // URLs, so pointing them all at /404 would be worse than pointing nowhere.
+    route.noindex
+      ? `<meta name="robots" content="noindex,follow" />`
+      : `<link rel="canonical" href="${url}" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="${esc(SITE_NAME)}" />`,
     `<meta property="og:title" content="${t}" />`,
@@ -93,9 +103,13 @@ async function main() {
       throw new Error(`Prerender injection failed for ${route.path} — template markers not found`)
     }
 
-    const outDir = route.path === '/' ? DIST : path.join(DIST, route.path)
-    await mkdir(outDir, { recursive: true })
-    await writeFile(path.join(outDir, 'index.html'), html, 'utf8')
+    // outFile lets a route land somewhere other than <path>/index.html —
+    // /404 needs to be dist/404.html for Vercel to serve it with a 404 status.
+    const outPath = route.outFile
+      ? path.join(DIST, route.outFile)
+      : path.join(route.path === '/' ? DIST : path.join(DIST, route.path), 'index.html')
+    await mkdir(path.dirname(outPath), { recursive: true })
+    await writeFile(outPath, html, 'utf8')
 
     const kb = (Buffer.byteLength(appHtml) / 1024).toFixed(1)
     console.log(`  prerendered ${route.path.padEnd(12)} ${kb} kB of HTML`)
