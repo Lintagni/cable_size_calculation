@@ -5,9 +5,9 @@ import Faq from '../../components/public/Faq'
 import Footer from '../../components/Footer'
 import type { RefMethod } from '../../calculators/lvCableSizing'
 
-// D1/D2 (buried / in duct) are omitted: no Appendix 4 table in the loaded
-// data carries those columns yet, so offering them returns no rating.
-const METHODS: RefMethod[] = ['C', 'B2', 'B1']
+// SWA is sized from the armoured tables (4D4A / 4E4A), which are the only
+// ones publishing the buried Method D column.
+const METHODS: RefMethod[] = ['C', 'D', 'E']
 
 const FAQ_ITEMS = [
   {
@@ -37,9 +37,9 @@ export default function SwaArmouredCalculator() {
       intro="Size steel wire armoured (SWA) cable to BS7671 — current rating, correction factors and voltage drop, for PVC or XLPE, clipped direct or buried."
     >
       <QuickCalculator
-        preset={{ referenceMethod: 'C', insulation: 'XLPE', deviceRating: 32, designCurrent: 32, cableLength: 40, phases: 1, voltage: 230 }}
+        preset={{ referenceMethod: 'C', insulation: 'XLPE', armoured: true, cableConfig: 'multicore', deviceRating: 32, designCurrent: 32, cableLength: 40, phases: 1, voltage: 230 }}
         methods={METHODS}
-        note="Preset for a 32A single-phase sub-main, XLPE/SWA/PVC, clipped direct (method C), 40m run. Change any field to match your installation."
+        note="Preset for a 32A single-phase sub-main, XLPE/SWA/PVC armoured, clipped direct (method C), 40m run, sized from BS7671 Table 4E4A. Switch the method to D for a buried run."
       />
 
       <article className="article">
@@ -80,9 +80,9 @@ export default function SwaArmouredCalculator() {
           XLPE/SWA/PVC, clipped direct (method C), 40m run, 30°C ambient, no grouping, no
           thermal insulation — returns a minimum compliant size of 6mm², at 4.06% voltage
           drop against the 5% limit. 4mm² already carries the current comfortably (its
-          tabulated rating is 42A, well over the 32A design current), so it's the voltage
-          drop check over the 40m run that pushes the result up to 6mm², not the current
-          rating. Shorten the run in the calculator above and watch the recommended size
+          tabulated rating in Table 4E4A is 49A, well over the 32A design current), but it
+          drops 6.12% over the 40m run, so it's the voltage drop check that pushes the
+          result up to 6mm², not the current rating. Shorten the run in the calculator above and watch the recommended size
           drop back down once voltage drop stops being the binding constraint.
         </p>
       </article>

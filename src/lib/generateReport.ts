@@ -1,6 +1,7 @@
 import type { CalcResultPayload } from '../store/aiChatStore'
 import type { LvCableInput } from '../calculators/lvCableSizing'
 import { ladderRows } from './sizeLadder'
+import { findTable } from '../data/appendix4'
 import type { BoardResult, BoardMeta, BoardDefaults } from '../calculators/boardSchedule'
 
 /**
@@ -174,14 +175,12 @@ type AutoTableDoc = { lastAutoTable: { finalY: number } }
 
 /** Which Appendix 4 table the rating was read from, for the reference line. */
 function appendix4Table(input: LvCableInput): string {
-  const al = (input.conductorMaterial ?? 'copper') === 'aluminium'
-  const multi = input.cableConfig === 'multicore'
-  if (input.insulation === 'PVC') {
-    if (al) return multi ? '4D3A' : '4D4A'
-    return multi ? '4D1A' : '4D2A'
-  }
-  if (al) return multi ? '4E3A' : '4E4A'
-  return multi ? '4E1A' : '4E2A'
+  return findTable({
+    insulation: input.insulation,
+    config: input.cableConfig,
+    material: input.conductorMaterial ?? 'copper',
+    armoured: input.armoured ?? false,
+  })?.id ?? 'n/a';
 }
 
 /** Wrapped disclaimer pinned to the bottom of the page. */
@@ -339,7 +338,7 @@ export async function generateReport(payload: CalcResultPayload, meta?: ReportMe
     doc.setFont('helvetica', 'normal')
     doc.text(
       [
-        `Current rating: BS7671 Appendix 4 Table ${appendix4Table(r.input)} · Regulation 433.1.1 (In >= Ib, Iz >= In)`,
+        `Current rating: BS7671 Appendix 4 Table ${appendix4Table(r.input)}, ${r.input.phases === 3 ? 'three/four-core three-phase' : 'two-core single-phase'} column · Regulation 433.1.1 (In >= Ib, Iz >= In)`,
         'Correction factors: Table 4B1 (Ca), Table 4C1 (Cg), Regulation 523.9 / Table 52.2 (Ci)',
         `Voltage drop: Section 525, Table 4Ab — limit ${res.maxAllowedVdropPct}% of ${r.input.voltage} V nominal`,
       ],

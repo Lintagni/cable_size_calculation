@@ -23,10 +23,13 @@ export default function BoardForm() {
   // Only methods the loaded tables can rate for the board's cable type.
   const methodOptions = useMemo(
     () => {
-      const ok = supportedMethods(defaults.insulation, defaults.cableConfig, defaults.conductorMaterial)
+      const ok = supportedMethods(
+        defaults.insulation, defaults.cableConfig, defaults.conductorMaterial,
+        defaults.armoured, defaults.phases,
+      )
       return REFERENCE_METHODS.filter(m => ok.includes(m.code))
     },
-    [defaults.insulation, defaults.cableConfig, defaults.conductorMaterial],
+    [defaults.insulation, defaults.cableConfig, defaults.conductorMaterial, defaults.armoured, defaults.phases],
   )
 
   async function exportPdf() {
@@ -114,6 +117,17 @@ export default function BoardForm() {
               <select className="cc-select" value={defaults.insulation} onChange={e => setDefaults({ insulation: e.target.value as InsulationType })}>
                 <option value="XLPE">XLPE · 90°C</option>
                 <option value="PVC">PVC · 70°C</option>
+              </select>
+            </label>
+            <label className="field">
+              <div className="label"><span>Armour</span></div>
+              <select
+                className="cc-select"
+                value={defaults.armoured ? 'yes' : 'no'}
+                onChange={e => setDefaults({ armoured: e.target.value === 'yes' })}
+              >
+                <option value="no">Non-armoured</option>
+                <option value="yes">Armoured · SWA</option>
               </select>
             </label>
             <label className="field">

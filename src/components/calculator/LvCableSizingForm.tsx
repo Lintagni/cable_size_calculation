@@ -26,6 +26,27 @@ const defaultInput: LvCableInput = {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+/** Methods Appendix 4 actually publishes for this exact cable and phase count. */
+function availableMethods(input: LvCableInput): string[] {
+  return supportedMethods(
+    input.insulation, input.cableConfig, input.conductorMaterial,
+    input.armoured ?? false, input.phases,
+  )
+}
+
+/**
+ * Keeps referenceMethod valid after a change to cable type.
+ *
+ * Changing armour or configuration changes which Appendix 4 table applies, and
+ * the selected method may not exist in the new one — leaving it would produce a
+ * silent "no tabulated rating".
+ */
+function reconcileMethod(input: LvCableInput): LvCableInput {
+  const ok = availableMethods(input)
+  if (ok.includes(input.referenceMethod)) return input
+  return { ...input, referenceMethod: (ok[0] ?? 'C') as LvCableInput['referenceMethod'] }
+}
+
 function Panel({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) {
   return (
     <section className="panel input-panel">
@@ -209,15 +230,15 @@ export default function LvCableSizingForm({ externalInputs, onResultChange }: Pr
         {/* C · Cable & Installation */}
         <Panel eyebrow="C · Construction" title="Cable &amp; Installation">
           <div className="grid-3">
-            <Field label="Conductor">
+            <Field label="Conductor" hint="Cu only">
+              {/* Aluminium is disabled until the Appendix 4 4H/4J tables are
+                  transcribed. The previous aluminium data sat under table IDs
+                  that belong to armoured copper, so it is not trustworthy and
+                  offering it would be worse than withholding it. */}
               <Seg
-                options={[{ v: 'copper', label: 'Cu' }, { v: 'aluminium', label: 'Al' }]}
-                value={input.conductorMaterial}
-                onChange={v => {
-                  const mat = v as 'copper' | 'aluminium'
-                  set('conductorMaterial', mat)
-                  if (mat === 'aluminium' && ['E', 'F', 'G'].includes(input.referenceMethod)) set('referenceMethod', 'C')
-                }}
+                options={[{ v: 'copper', label: 'Cu' }]}
+                value="copper"
+                onChange={() => {}}
               />
             </Field>
             <Field label="Insulation">
@@ -233,10 +254,23 @@ export default function LvCableSizingForm({ externalInputs, onResultChange }: Pr
                 value={input.cableConfig}
                 onChange={v => {
                   const cfg = v as 'single-core' | 'multicore'
-                  set('cableConfig', cfg)
-                  if (cfg === 'multicore'    && ['E','F','G'].includes(input.referenceMethod))          set('referenceMethod', 'C')
-                  if (cfg === 'single-core'  && ['A1','A2','B1','B2'].includes(input.referenceMethod)) set('referenceMethod', 'E')
+                  setInput(prev => reconcileMethod({ ...prev, cableConfig: cfg, armoured: cfg === 'single-core' ? false : prev.armoured }))
                 }}
+              />
+            </Field>
+          </div>
+          <div className="grid-2">
+            <Field label="Armour" hint="SWA · Table 4D4A / 4E4A">
+              {/* Armoured multicore is the only cable type with published
+                  buried (Method D) ratings, so this gates that method. */}
+              <Seg
+                options={[{ v: 'no', label: 'None' }, { v: 'yes', label: 'SWA' }]}
+                value={input.armoured ? 'yes' : 'no'}
+                onChange={v => setInput(prev => reconcileMethod({
+                  ...prev,
+                  armoured: v === 'yes',
+                  cableConfig: v === 'yes' ? 'multicore' : prev.cableConfig,
+                }))}
               />
             </Field>
           </div>
@@ -251,7 +285,7 @@ export default function LvCableSizingForm({ externalInputs, onResultChange }: Pr
                     list offered D1/D2/G, for which no table has data, so those
                     selections silently returned "no tabulated rating". */}
                 {REFERENCE_METHODS
-                  .filter(m => supportedMethods(input.insulation, input.cableConfig, input.conductorMaterial).includes(m.code))
+                  .filter(m => availableMethods(input).includes(m.code))
                   .map(m => (
                     <option key={m.code} value={m.code}>{m.code} — {m.description}</option>
                   ))}

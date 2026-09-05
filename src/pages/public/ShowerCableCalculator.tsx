@@ -5,7 +5,7 @@ import Faq from '../../components/public/Faq'
 import Footer from '../../components/Footer'
 import type { RefMethod } from '../../calculators/lvCableSizing'
 
-const METHODS: RefMethod[] = ['C', 'A1', 'A2', 'B1', 'B2']
+const METHODS: RefMethod[] = ['C', 'A', 'B']
 
 const SHOWER_RATINGS = [
   { kw: 7.5, amps: 32.6 },
@@ -42,9 +42,9 @@ export default function ShowerCableCalculator() {
       intro="Size the cable for an electric shower circuit to BS7671 — current rating, correction factors and voltage drop, for any shower kW rating and run length."
     >
       <QuickCalculator
-        preset={{ designCurrent: 41.3, deviceRating: 45, referenceMethod: 'C', cableLength: 12, phases: 1, voltage: 230 }}
+        preset={{ designCurrent: 41.3, deviceRating: 45, referenceMethod: 'C', cableLength: 12, phases: 1, voltage: 230, insulation: 'PVC' }}
         methods={METHODS}
-        note="Preset for a common 9.5kW / 41.3A shower on a 45A device, method C, 12m run. Change the length and method to match your installation."
+        note="Preset for a common 9.5kW / 41.3A shower on a 45A device, PVC twin-and-earth, method C, 12m run. Change the length and method to match your installation."
       />
 
       <article className="article">

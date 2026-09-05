@@ -2,11 +2,8 @@ import { Link } from 'react-router-dom'
 import PageShell from '../../components/public/PageShell'
 import Footer from '../../components/Footer'
 import Faq from '../../components/public/Faq'
-import {
-  table4D1A, table4D2A, table4E1A, table4E2A,
-  table4D3A, table4D4A, table4E3A, table4E4A,
-  STANDARD_CSA_SIZES, ALUMINIUM_CSA_SIZES,
-} from '../../data/cableTables'
+import { STANDARD_CSA_SIZES } from '../../data/cableTables'
+import { AP4_TABLES } from '../../data/appendix4'
 import { ambientTempFactors, groupingFactors } from '../../data/correctionFactors'
 
 /**
@@ -18,23 +15,15 @@ import { ambientTempFactors, groupingFactors } from '../../data/correctionFactor
  * coverage the engine does not have.
  */
 
-const METHOD_KEYS = ['A1', 'A2', 'B1', 'B2', 'C', 'D1', 'D2', 'E', 'F', 'G'] as const
+const METHOD_KEYS = ['A', 'B', 'C', 'D', 'E', 'F'] as const
 
-/** Read straight off each table so the page can't claim a method the data lacks. */
-function methodsOf(rows: { [k: string]: number | undefined }[]): string[] {
-  return METHOD_KEYS.filter(k => rows.some(r => r[k] !== undefined))
-}
-
-const TABLES = [
-  { id: '4D1A', label: 'Multicore 70°C thermoplastic (PVC), copper', rows: table4D1A },
-  { id: '4D2A', label: 'Single-core 70°C thermoplastic (PVC), copper', rows: table4D2A },
-  { id: '4E1A', label: 'Multicore 90°C thermosetting (XLPE), copper', rows: table4E1A },
-  { id: '4E2A', label: 'Single-core 90°C thermosetting (XLPE), copper', rows: table4E2A },
-  { id: '4D3A', label: 'Multicore 70°C thermoplastic (PVC), aluminium', rows: table4D3A },
-  { id: '4D4A', label: 'Single-core 70°C thermoplastic (PVC), aluminium', rows: table4D4A },
-  { id: '4E3A', label: 'Multicore 90°C thermosetting (XLPE), aluminium', rows: table4E3A },
-  { id: '4E4A', label: 'Single-core 90°C thermosetting (XLPE), aluminium', rows: table4E4A },
-].map(t => ({ ...t, methods: methodsOf(t.rows as unknown as { [k: string]: number | undefined }[]) }))
+/** Read straight off the live data so this page can't claim coverage it lacks. */
+const TABLES = AP4_TABLES.map(t => ({
+  id: t.id,
+  label: t.title,
+  rows: t.rows,
+  methods: METHOD_KEYS.filter(k => t.rows.some(r => r.ratings[k])),
+}))
 
 const FAQ_ITEMS = [
   {
@@ -47,7 +36,7 @@ const FAQ_ITEMS = [
   },
   {
     q: 'What is deliberately not implemented?',
-    a: 'Buried installations (reference methods D1 and D2) and method G are not yet available — those Appendix 4 columns are not in the loaded data, so the calculators do not offer them. Ring final circuits are sized as radials. Also excluded: harmonic derating for triplen-heavy loads, soil thermal resistivity other than the Appendix 4 default, mineral-insulated cable, circuits over 1000 V, and any discrimination or earth fault loop impedance study. Where a case falls outside the implemented scope the calculator says so rather than returning an approximate answer.',
+a: 'Aluminium conductors — the 4H and 4J series tables are not yet transcribed, so the calculator sizes copper only. Ring final circuits are sized as radials. Also excluded: harmonic derating for triplen-heavy loads, soil thermal resistivity other than the Appendix 4 default, mineral-insulated cable, circuits over 1000 V, and any discrimination or earth fault loop impedance study. Where a case falls outside the implemented scope the calculator says so rather than returning an approximate answer.',
   },
   {
     q: 'Does it replace a competent designer?',
@@ -60,9 +49,6 @@ const FAQ_ITEMS = [
 ]
 
 export default function Methodology() {
-  const copperSizes = STANDARD_CSA_SIZES.length
-  const aluminiumSizes = ALUMINIUM_CSA_SIZES.length
-
   return (
     <PageShell
       crumbs={[{ label: 'Home', to: '/' }, { label: 'How it calculates' }]}
@@ -117,9 +103,11 @@ export default function Methodology() {
           </table>
         </div>
         <p>
-          Selection steps through {copperSizes} standard copper sizes (1 mm² to{' '}
-          {STANDARD_CSA_SIZES.at(-1)} mm²) and {aluminiumSizes} aluminium sizes, in order,
-          taking the first that passes both checks. Correction factors come from{' '}
+          Selection steps through the sizes each table publishes (copper, 1 mm² to{' '}
+          {STANDARD_CSA_SIZES.at(-1)} mm²), in order, taking the first that passes both
+          checks. Every method has two columns — one two-core cable on single phase, one
+          three- or four-core cable on three phase — and the calculator reads the column
+          matching the phase count you enter. Correction factors come from{' '}
           {ambientTempFactors.length} ambient temperature rows (Table 4B1) and{' '}
           {groupingFactors.length} grouping rows (Table 4C1); ambient temperatures between
           tabulated points are linearly interpolated.
@@ -160,12 +148,18 @@ export default function Methodology() {
         </p>
         <ul>
           <li>
-            <strong>Buried installations.</strong> Reference methods D1 and D2 (in a duct in
-            the ground, or direct buried) and method G (single-core in free air, flat spaced)
-            have no tabulated columns in the loaded data, so those installations cannot
-            currently be sized. Those methods are not offered in any of the calculators
-            rather than being offered and silently failing. This is the largest known gap and
-            the next data work planned.
+            <strong>Aluminium conductors.</strong> The Appendix 4 aluminium tables (the 4H
+            and 4J series) have not been transcribed yet, so the calculator sizes copper
+            only. Earlier versions of this site did offer aluminium, but the figures sat
+            under table IDs belonging to armoured copper and were not trustworthy, so the
+            option has been withdrawn rather than left in place. This is the largest
+            outstanding gap.
+          </li>
+          <li>
+            <strong>Single-core free-air arrangements.</strong> Method F is read from the
+            touching columns — two cables flat for single phase, three cables trefoil for
+            three phase, the lower of the published pair. The "spaced by one diameter"
+            columns and their horizontal/vertical split are not modelled.
           </li>
           <li>
             <strong>Ring final circuits.</strong> Sized as radials. BS7671 treats a ring as a
@@ -183,6 +177,24 @@ export default function Methodology() {
           </li>
           <li>Diversity. Design current is an input, not something the calculator derives.</li>
         </ul>
+
+        <h2>Correction — September 2026</h2>
+        <p>
+          The rating data was re-transcribed from BS7671:2018+A2 on 5 September 2026 after
+          three defects were found in the previous set. Table identities were wrong (multicore
+          data sat under 4D1A, which is the single-core table; aluminium sat under
+          4D3A/4D4A, which are armoured copper). Appendix 4's two columns per method — one
+          two-core cable on single phase, one three- or four-core cable on three phase — had
+          been collapsed into a single figure, so <strong>three-phase circuits were rated
+          against the single-phase column and came out up to 15% optimistic</strong>. And no
+          table carried the buried Method D columns, so buried runs could not be sized at all.
+        </p>
+        <p>
+          All three are fixed. If you produced a three-phase design with this calculator
+          before that date, re-run it — the corrected figures are more conservative and may
+          call for a larger conductor. Buried and armoured cable (Tables 4D4A and 4E4A,
+          Method D) now works for the first time.
+        </p>
 
         <h2>Responsibility</h2>
         <p>

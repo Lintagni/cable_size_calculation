@@ -1,4 +1,13 @@
-// BS7671:2018+A2 Appendix 4 cable current rating data
+import { methodsFor } from './appendix4';
+// BS7671:2018+A2 Appendix 4 — voltage drop data, correction-factor helpers and
+// shared types.
+//
+// The current-RATING tables that used to live here were removed on 2026-09-05:
+// their table IDs did not match BS7671 (the multicore data sat under 4D1A,
+// which is the single-core table; aluminium sat under 4D3A/4D4A, which are
+// armoured copper), and they collapsed the standard's two-core / three-core
+// columns into one figure, so three-phase circuits were rated against the
+// single-phase column. Ratings now come from src/data/appendix4.ts.
 
 export type InsulationType = 'PVC' | 'XLPE';
 export type ConductorMaterial = 'copper' | 'aluminium';
@@ -10,92 +19,6 @@ export interface CableTableEntry {
   A1?: number; A2?: number; B1?: number; B2?: number;
   C?: number; D1?: number; D2?: number; E?: number; F?: number; G?: number;
 }
-
-// Table 4D1A: Multicore PVC 70°C copper (2 or 3 conductors loaded)
-export const table4D1A: CableTableEntry[] = [
-  { csa: 1,    A1: 11,  A2: 10.5, B1: 13,  B2: 12.5, C: 15  },
-  { csa: 1.5,  A1: 14.5,A2: 13.5, B1: 16.5,B2: 15.5, C: 19.5 },
-  { csa: 2.5,  A1: 19.5,A2: 18.5, B1: 23,  B2: 21,   C: 27  },
-  { csa: 4,    A1: 26,  A2: 25,   B1: 30,  B2: 28,   C: 36  },
-  { csa: 6,    A1: 34,  A2: 32,   B1: 38,  B2: 35,   C: 46  },
-  { csa: 10,   A1: 46,  A2: 43,   B1: 52,  B2: 48,   C: 63  },
-  { csa: 16,   A1: 61,  A2: 57,   B1: 69,  B2: 64,   C: 85  },
-  { csa: 25,   A1: 80,  A2: 75,   B1: 90,  B2: 84,   C: 110 },
-  { csa: 35,   A1: 99,  A2: 92,   B1: 111, B2: 103,  C: 133 },
-  { csa: 50,   A1: 119, A2: 110,  B1: 133, B2: 124,  C: 159 },
-  { csa: 70,   A1: 151, A2: 139,  B1: 168, B2: 156,  C: 200 },
-  { csa: 95,   A1: 182, A2: 167,  B1: 201, B2: 188,  C: 241 },
-  { csa: 120,  A1: 210, A2: 192,  B1: 232, B2: 216,  C: 278 },
-  { csa: 150,  A1: 240, A2: 219,  B1: 258, B2: 245,  C: 318 },
-  { csa: 185,  A1: 273, A2: 248,  B1: 294, B2: 278,  C: 362 },
-  { csa: 240,  A1: 321, A2: 291,  B1: 344, B2: 325,  C: 424 },
-  { csa: 300,  A1: 367, A2: 334,  B1: 394, B2: 371,  C: 486 },
-];
-
-// Table 4D2A: Single-core PVC 70°C copper, in free air (ref E & F)
-export const table4D2A: CableTableEntry[] = [
-  { csa: 1,    E: 15,  F: 15  },
-  { csa: 1.5,  E: 19.5,F: 19.5 },
-  { csa: 2.5,  E: 27,  F: 27  },
-  { csa: 4,    E: 36,  F: 36  },
-  { csa: 6,    E: 46,  F: 46  },
-  { csa: 10,   E: 63,  F: 63  },
-  { csa: 16,   E: 85,  F: 85  },
-  { csa: 25,   E: 110, F: 114 },
-  { csa: 35,   E: 133, F: 141 },
-  { csa: 50,   E: 159, F: 170 },
-  { csa: 70,   E: 200, F: 213 },
-  { csa: 95,   E: 241, F: 256 },
-  { csa: 120,  E: 278, F: 293 },
-  { csa: 150,  E: 318, F: 336 },
-  { csa: 185,  E: 362, F: 383 },
-  { csa: 240,  E: 424, F: 449 },
-  { csa: 300,  E: 486, F: 515 },
-  { csa: 400,  E: 561, F: 600 },
-];
-
-// Table 4E1A: Multicore XLPE 90°C copper (2 or 3 conductors loaded)
-export const table4E1A: CableTableEntry[] = [
-  { csa: 1,    A1: 13,  A2: 12.5, B1: 15,  B2: 14.5, C: 17.5 },
-  { csa: 1.5,  A1: 17,  A2: 16,   B1: 19.5,B2: 18.5, C: 23  },
-  { csa: 2.5,  A1: 23,  A2: 22,   B1: 27,  B2: 25,   C: 31  },
-  { csa: 4,    A1: 31,  A2: 30,   B1: 36,  B2: 34,   C: 42  },
-  { csa: 6,    A1: 40,  A2: 38,   B1: 46,  B2: 43,   C: 54  },
-  { csa: 10,   A1: 54,  A2: 51,   B1: 63,  B2: 59,   C: 73  },
-  { csa: 16,   A1: 73,  A2: 68,   B1: 85,  B2: 79,   C: 98  },
-  { csa: 25,   A1: 95,  A2: 89,   B1: 112, B2: 104,  C: 129 },
-  { csa: 35,   A1: 117, A2: 110,  B1: 138, B2: 129,  C: 158 },
-  { csa: 50,   A1: 141, A2: 132,  B1: 168, B2: 154,  C: 191 },
-  { csa: 70,   A1: 179, A2: 167,  B1: 213, B2: 194,  C: 246 },
-  { csa: 95,   A1: 216, A2: 202,  B1: 258, B2: 233,  C: 298 },
-  { csa: 120,  A1: 249, A2: 233,  B1: 299, B2: 268,  C: 346 },
-  { csa: 150,  A1: 285, A2: 265,  B1: 344, B2: 300,  C: 395 },
-  { csa: 185,  A1: 324, A2: 300,  B1: 392, B2: 341,  C: 450 },
-  { csa: 240,  A1: 380, A2: 351,  B1: 461, B2: 400,  C: 530 },
-  { csa: 300,  A1: 435, A2: 402,  B1: 530, B2: 460,  C: 610 },
-];
-
-// Table 4E2A: Single-core XLPE 90°C copper, in free air (ref E & F)
-export const table4E2A: CableTableEntry[] = [
-  { csa: 1,    E: 17.5, F: 17.5 },
-  { csa: 1.5,  E: 23,   F: 23  },
-  { csa: 2.5,  E: 31,   F: 31  },
-  { csa: 4,    E: 42,   F: 42  },
-  { csa: 6,    E: 54,   F: 54  },
-  { csa: 10,   E: 73,   F: 73  },
-  { csa: 16,   E: 98,   F: 98  },
-  { csa: 25,   E: 129,  F: 134 },
-  { csa: 35,   E: 158,  F: 167 },
-  { csa: 50,   E: 191,  F: 201 },
-  { csa: 70,   E: 246,  F: 261 },
-  { csa: 95,   E: 298,  F: 315 },
-  { csa: 120,  E: 346,  F: 364 },
-  { csa: 150,  E: 395,  F: 416 },
-  { csa: 185,  E: 450,  F: 473 },
-  { csa: 240,  E: 530,  F: 558 },
-  { csa: 300,  E: 610,  F: 642 },
-  { csa: 400,  E: 718,  F: 754 },
-];
 
 // Voltage drop tables mV/A/m (r, x, z) from BS7671 Appendix 4
 // Format: { csa, r, x, z } — z is the value used for power factor 0.8 circuits
@@ -173,68 +96,6 @@ export const vdropXLPESingleCore: VdropEntry[] = [
 // ─── ALUMINIUM CONDUCTOR TABLES ────────────────────────────────────────────
 // Aluminium minimum size is 16mm² per BS7671 Table 54.7 (fixed wiring)
 
-// Table 4D3A: Multicore PVC 70°C aluminium (2 or 3 conductors loaded)
-export const table4D3A: CableTableEntry[] = [
-  { csa: 16,  A1: 47,  A2: 44,  B1: 55,  B2: 51,  C: 65  },
-  { csa: 25,  A1: 62,  A2: 58,  B1: 73,  B2: 68,  C: 86  },
-  { csa: 35,  A1: 77,  A2: 72,  B1: 89,  B2: 83,  C: 104 },
-  { csa: 50,  A1: 92,  A2: 86,  B1: 108, B2: 99,  C: 123 },
-  { csa: 70,  A1: 116, A2: 108, B1: 136, B2: 125, C: 154 },
-  { csa: 95,  A1: 139, A2: 130, B1: 163, B2: 150, C: 185 },
-  { csa: 120, A1: 160, A2: 150, B1: 188, B2: 172, C: 212 },
-  { csa: 150, A1: 182, A2: 169, B1: 212, B2: 194, C: 240 },
-  { csa: 185, A1: 207, A2: 192, B1: 245, B2: 222, C: 271 },
-  { csa: 240, A1: 242, A2: 224, B1: 285, B2: 258, C: 317 },
-  { csa: 300, A1: 278, A2: 255, B1: 326, B2: 294, C: 362 },
-];
-
-// Table 4D4A: Single-core PVC 70°C aluminium (in free air, ref E & F)
-export const table4D4A: CableTableEntry[] = [
-  { csa: 16,  E: 65,  F: 65  },
-  { csa: 25,  E: 86,  F: 90  },
-  { csa: 35,  E: 104, F: 110 },
-  { csa: 50,  E: 123, F: 130 },
-  { csa: 70,  E: 154, F: 163 },
-  { csa: 95,  E: 185, F: 196 },
-  { csa: 120, E: 212, F: 225 },
-  { csa: 150, E: 240, F: 255 },
-  { csa: 185, E: 271, F: 288 },
-  { csa: 240, E: 317, F: 337 },
-  { csa: 300, E: 362, F: 385 },
-  { csa: 400, E: 415, F: 445 },
-];
-
-// Table 4E3A: Multicore XLPE 90°C aluminium (2 or 3 conductors loaded)
-export const table4E3A: CableTableEntry[] = [
-  { csa: 16,  A1: 57,  A2: 53,  B1: 68,  B2: 63,  C: 80  },
-  { csa: 25,  A1: 76,  A2: 71,  B1: 89,  B2: 82,  C: 106 },
-  { csa: 35,  A1: 94,  A2: 88,  B1: 110, B2: 102, C: 130 },
-  { csa: 50,  A1: 113, A2: 105, B1: 134, B2: 121, C: 156 },
-  { csa: 70,  A1: 143, A2: 133, B1: 171, B2: 155, C: 200 },
-  { csa: 95,  A1: 172, A2: 160, B1: 207, B2: 188, C: 241 },
-  { csa: 120, A1: 199, A2: 185, B1: 240, B2: 218, C: 279 },
-  { csa: 150, A1: 227, A2: 210, B1: 278, B2: 250, C: 318 },
-  { csa: 185, A1: 259, A2: 240, B1: 317, B2: 285, C: 362 },
-  { csa: 240, A1: 305, A2: 281, B1: 374, B2: 336, C: 428 },
-  { csa: 300, A1: 351, A2: 323, B1: 431, B2: 388, C: 493 },
-];
-
-// Table 4E4A: Single-core XLPE 90°C aluminium (in free air, ref E & F)
-export const table4E4A: CableTableEntry[] = [
-  { csa: 16,  E: 80,  F: 80  },
-  { csa: 25,  E: 106, F: 110 },
-  { csa: 35,  E: 130, F: 137 },
-  { csa: 50,  E: 156, F: 166 },
-  { csa: 70,  E: 200, F: 213 },
-  { csa: 95,  E: 241, F: 256 },
-  { csa: 120, E: 279, F: 295 },
-  { csa: 150, E: 318, F: 336 },
-  { csa: 185, E: 362, F: 384 },
-  { csa: 240, E: 428, F: 455 },
-  { csa: 300, E: 493, F: 524 },
-  { csa: 400, E: 571, F: 609 },
-];
-
 // Voltage drop for aluminium multicore PVC (Table 4D3B — approximate from BS7671)
 // Al resistivity ~1.64× Cu at operating temp; reactive component unchanged
 export const vdropPVCMulticoreAl: VdropEntry[] = [
@@ -270,45 +131,27 @@ export const STANDARD_CSA_SIZES = [1, 1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95
 export const ALUMINIUM_CSA_SIZES = [16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300, 400];
 
 export const REFERENCE_METHODS = [
-  { code: 'A1', description: 'Enclosed in insulated wall (clipped multicore)' },
-  { code: 'A2', description: 'Enclosed in insulated wall (multicore in conduit)' },
-  { code: 'B1', description: 'Enclosed in conduit on wall (single-core)' },
-  { code: 'B2', description: 'Enclosed in conduit on wall (multicore)' },
-  { code: 'C',  description: 'Clipped direct to non-metallic surface' },
-  { code: 'D1', description: 'In duct in ground (single)' },
-  { code: 'D2', description: 'In duct in ground (multicore)' },
-  { code: 'E',  description: 'Free air (multicore horizontal)' },
-  { code: 'F',  description: 'Free air (single-core trefoil)' },
-  { code: 'G',  description: 'Free air (single-core flat spaced)' },
+  { code: 'A', description: 'Enclosed in conduit in a thermally insulating wall' },
+  { code: 'B', description: 'Enclosed in conduit on a wall or in trunking' },
+  { code: 'C', description: 'Clipped direct' },
+  { code: 'D', description: 'Direct in ground or in ducting in ground' },
+  { code: 'E', description: 'In free air or on a perforated tray (multicore)' },
+  { code: 'F', description: 'In free air or on a perforated tray (single-core)' },
 ];
 
 /**
- * Reference methods the loaded data can actually serve.
+ * Reference methods the loaded Appendix 4 data can actually serve.
  *
- * Derived from the tables rather than hard-coded, so it can never claim
- * coverage the data does not have. Offering a method with no tabulated column
- * produces a silent "no rating exists" dead end, which is worse than not
- * offering it: the user cannot tell a missing table from an impossible circuit.
- *
- * KNOWN GAP: no table currently carries D1, D2 (buried / in duct in ground) or
- * G (single-core free air, flat spaced) columns, so those installations cannot
- * be sized. Buried SWA is a common UK case — adding the Appendix 4 D1/D2
- * columns is the highest-value data work outstanding. The values must be
- * transcribed from BS7671:2018+A2; do not interpolate or estimate them.
+ * Delegates to src/data/appendix4.ts, which holds the corrected transcription.
+ * Offering a method with no tabulated column produces a silent "no rating"
+ * dead end, so every method dropdown filters through this.
  */
 export function supportedMethods(
   insulation: InsulationType,
   config: CableConfig,
   material: ConductorMaterial = 'copper',
+  armoured = false,
+  phases: 1 | 3 = 3,
 ): string[] {
-  const table = material === 'aluminium'
-    ? (insulation === 'PVC'
-        ? (config === 'multicore' ? table4D3A : table4D4A)
-        : (config === 'multicore' ? table4E3A : table4E4A))
-    : (insulation === 'PVC'
-        ? (config === 'multicore' ? table4D1A : table4D2A)
-        : (config === 'multicore' ? table4E1A : table4E2A));
-
-  const keys: (keyof CableTableEntry)[] = ['A1', 'A2', 'B1', 'B2', 'C', 'D1', 'D2', 'E', 'F', 'G'];
-  return keys.filter(k => table.some(row => row[k] !== undefined)) as string[];
+  return methodsFor({ insulation, config, material, armoured }, phases);
 }

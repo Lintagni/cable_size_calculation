@@ -1,17 +1,24 @@
 import {
-  table4D1A, table4D2A, table4E1A, table4E2A,
-  table4D3A, table4D4A, table4E3A, table4E4A,
   vdropPVCMulticore, vdropXLPEMulticore, vdropXLPESingleCore,
   vdropPVCMulticoreAl, vdropXLPEMulticoreAl,
   STANDARD_CSA_SIZES, ALUMINIUM_CSA_SIZES,
   type InsulationType, type CableConfig,
 } from '../data/cableTables';
+import { tabulatedRating, sizesFor, type Ap4Method } from '../data/appendix4';
 import {
   getAmbientFactor, getGroupingFactor,
   thermalInsulationFactors, protectiveDeviceFactors,
 } from '../data/correctionFactors';
 
-export type RefMethod = 'A1' | 'A2' | 'B1' | 'B2' | 'C' | 'D1' | 'D2' | 'E' | 'F' | 'G';
+/**
+ * Appendix 4 installation reference methods.
+ *
+ * A1/A2/B1/B2/D1/D2/G were previously listed here, but Appendix 4's rating
+ * tables publish columns for A, B, C, D, E and F — the numeric suffixes in the
+ * old list came from Table 4A2's *installation* numbering, and were being used
+ * as if they were rating columns. See src/data/appendix4.ts.
+ */
+export type RefMethod = Ap4Method;
 export type ProtectiveDevice = keyof typeof protectiveDeviceFactors;
 export type ThermalInsulation = keyof typeof thermalInsulationFactors;
 
@@ -35,6 +42,9 @@ export interface LvCableInput {
   cableLength: number;      // m
   insulation: InsulationType;
   cableConfig: CableConfig;
+  /** Steel wire armoured (SWA). Selects the 4D4A/4E4A tables, which are the
+   *  only ones publishing the buried Method D columns. */
+  armoured?: boolean;
   parallelCircuits: number; // number of parallel cable sets
 
   // Correction factors
@@ -82,27 +92,31 @@ export interface LvCableResult {
   ipssc?: number;           // kA prospective at destination
 }
 
+/**
+ * Tabulated rating It, or 0 when Appendix 4 publishes no figure.
+ *
+ * Phase matters: the standard gives a two-core (single-phase) and a
+ * three/four-core (three-phase) column for every method, and the old code used
+ * the single-phase figure for every circuit — overstating three-phase capacity
+ * by 10-15%.
+ */
 function getTabulatedRating(
   csa: number,
-  insulation: InsulationType,
-  config: CableConfig,
+  input: LvCableInput,
   method: RefMethod,
-  material: 'copper' | 'aluminium',
 ): number {
-  let table;
-  if (material === 'aluminium') {
-    table = insulation === 'PVC'
-      ? (config === 'multicore' ? table4D3A : table4D4A)
-      : (config === 'multicore' ? table4E3A : table4E4A);
-  } else {
-    table = insulation === 'PVC'
-      ? (config === 'multicore' ? table4D1A : table4D2A)
-      : (config === 'multicore' ? table4E1A : table4E2A);
-  }
-
-  const row = table.find(r => r.csa === csa);
-  if (!row) return 0;
-  return (row as unknown as Record<string, number>)[method] ?? 0;
+  const It = tabulatedRating(
+    {
+      insulation: input.insulation,
+      config: input.cableConfig,
+      material: input.conductorMaterial ?? 'copper',
+      armoured: input.armoured ?? false,
+    },
+    csa,
+    method,
+    input.phases,
+  );
+  return It ?? 0;
 }
 
 function getVdrop(
@@ -158,13 +172,25 @@ export function calculate(input: LvCableInput, faultCurrentKa?: number): LvCable
 
   const IF = (faultCurrentKa ?? 0) * 1000;
 
-  // Aluminium min size is 16mm²; copper uses full range
-  const sizeList = material === 'aluminium' ? ALUMINIUM_CSA_SIZES : STANDARD_CSA_SIZES;
+  // Sizes come from the Appendix 4 table for this cable, so the engine can
+  // never step through a size the standard does not publish. Falls back to the
+  // generic lists only if no table matches (e.g. aluminium, not yet
+  // transcribed), in which case every lookup returns 0 and the caller sees an
+  // empty result rather than a fabricated one.
+  const tableSizes = sizesFor({
+    insulation: input.insulation,
+    config: input.cableConfig,
+    material,
+    armoured: input.armoured ?? false,
+  });
+  const sizeList = tableSizes.length
+    ? tableSizes
+    : (material === 'aluminium' ? ALUMINIUM_CSA_SIZES : STANDARD_CSA_SIZES);
 
   const allSizes: CsaResult[] = sizeList
     .filter(csa => csa > 0)
     .map(csa => {
-      const It = getTabulatedRating(csa, input.insulation, input.cableConfig, input.referenceMethod, material);
+      const It = getTabulatedRating(csa, input, input.referenceMethod);
       if (It === 0) return null;
 
       const Iz = It * combined * input.parallelCircuits;

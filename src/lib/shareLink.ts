@@ -25,7 +25,7 @@ const NUMERIC = {
   pf:  'powerFactor',
 } as const satisfies Record<string, keyof LvCableInput>
 
-const VALID_METHODS: RefMethod[] = ['A1', 'A2', 'B1', 'B2', 'C', 'D1', 'D2', 'E', 'F', 'G']
+const VALID_METHODS: RefMethod[] = ['A', 'B', 'C', 'D', 'E', 'F']
 
 export function encodeInputs(input: LvCableInput): string {
   const p = new URLSearchParams()

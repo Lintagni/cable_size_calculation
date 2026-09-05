@@ -92,10 +92,14 @@ export default function QuickCalculator({ preset, methods, note, cta = DEFAULT_C
     }
   }, [input])
 
-  // Only offer methods the loaded tables can actually rate for this cable type.
-  // Offering D1/D2 with no data behind them produced a silent dead end.
-  const available = supportedMethods(input.insulation, input.cableConfig, input.conductorMaterial)
-  const methodList = (methods ?? (['C', 'B1', 'B2', 'E', 'F'] as RefMethod[]))
+  // Only offer methods Appendix 4 actually publishes for this exact cable and
+  // phase count. Offering a method with no column behind it produced a silent
+  // "no tabulated rating" dead end.
+  const available = supportedMethods(
+    input.insulation, input.cableConfig, input.conductorMaterial,
+    input.armoured ?? false, input.phases,
+  )
+  const methodList = (methods ?? (['C', 'B', 'A', 'E', 'F'] as RefMethod[]))
     .filter(m => available.includes(m))
   const effectiveMethods: RefMethod[] = methodList.length ? methodList : (available as RefMethod[])
   const r = result?.results
@@ -150,8 +154,11 @@ export default function QuickCalculator({ preset, methods, note, cta = DEFAULT_C
               value={input.phases}
               onChange={e => {
                 const phases = Number(e.target.value) as 1 | 3
-                set('phases', phases)
-                set('voltage', phases === 1 ? 230 : 400)
+                setInput(prev => {
+                  const next = { ...prev, phases, voltage: phases === 1 ? 230 : 400 }
+                  const ok = supportedMethods(next.insulation, next.cableConfig, next.conductorMaterial, next.armoured ?? false, phases)
+                  return ok.includes(next.referenceMethod) ? next : { ...next, referenceMethod: (ok[0] ?? 'C') as RefMethod }
+                })
               }}
             >
               <option value={1}>Single phase · 230 V</option>
@@ -169,6 +176,26 @@ export default function QuickCalculator({ preset, methods, note, cta = DEFAULT_C
                 const meta = REFERENCE_METHODS.find(x => x.code === m)
                 return <option key={m} value={m}>{m} — {meta?.description ?? m}</option>
               })}
+            </select>
+          </Field>
+
+          <Field label="Armour">
+            <select
+              className="cc-select"
+              value={input.armoured ? 'yes' : 'no'}
+              onChange={e => {
+                const armoured = e.target.value === 'yes'
+                setInput(prev => {
+                  const next = { ...prev, armoured, cableConfig: armoured ? 'multicore' as const : prev.cableConfig }
+                  const ok = supportedMethods(next.insulation, next.cableConfig, next.conductorMaterial, armoured, next.phases)
+                  // The armoured and plain tables publish different methods, so
+                  // re-point the selection if the current one no longer exists.
+                  return ok.includes(next.referenceMethod) ? next : { ...next, referenceMethod: (ok[0] ?? 'C') as RefMethod }
+                })
+              }}
+            >
+              <option value="no">Non-armoured</option>
+              <option value="yes">Armoured · SWA</option>
             </select>
           </Field>
 

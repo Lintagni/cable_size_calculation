@@ -11,8 +11,6 @@
 
 import { supabase } from './supabase'
 import {
-  table4D1A, table4D2A, table4E1A, table4E2A,
-  table4D3A, table4D4A, table4E3A, table4E4A,
   vdropPVCMulticore, vdropXLPEMulticore, vdropXLPESingleCore,
   vdropPVCMulticoreAl, vdropXLPEMulticoreAl,
 } from '../data/cableTables'
@@ -53,13 +51,21 @@ type DbAbc = {
 type DbBusbar = { label: string; width_mm: number; thickness_mm: number; csa_mm2: number; current_cu_a: number }
 
 // ── Map DB table_id → the exported TS array it should populate ────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const RATINGS_MAP: Record<string, any[]> = {
-  '4D1A': table4D1A, '4D2A': table4D2A,
-  '4E1A': table4E1A, '4E2A': table4E2A,
-  '4D3A': table4D3A, '4D4A': table4D4A,
-  '4E3A': table4E3A, '4E4A': table4E4A,
-}
+/**
+ * DISABLED 2026-09-05.
+ *
+ * The `cable_ratings` table in Supabase holds rows in the old, incorrect shape:
+ * one figure per method with A1/A2/B1/B2 columns, under table IDs that did not
+ * match what BS7671 calls those tables. The engine now reads
+ * src/data/appendix4.ts, which is phase-aware (a two-core and a three/four-core
+ * column per method) and correctly named.
+ *
+ * Splicing the old rows back in would silently reintroduce the very defect that
+ * was just fixed, so ratings are no longer loaded from the database. Re-enable
+ * only once the DB schema carries the two-core / three-core split and the rows
+ * have been re-imported from the corrected data.
+ */
+const RATINGS_MAP: Record<string, unknown[]> = {}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const VDROP_MAP: Record<string, any[]> = {

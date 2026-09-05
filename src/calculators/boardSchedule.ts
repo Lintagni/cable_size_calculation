@@ -24,6 +24,8 @@ export interface BoardDefaults {
   cableConfig: CableConfig
   conductorMaterial: 'copper' | 'aluminium'
   referenceMethod: RefMethod
+  /** SWA — selects the armoured Appendix 4 tables, the only ones with Method D. */
+  armoured: boolean
 }
 
 export interface BoardCircuit {
@@ -84,6 +86,7 @@ export const DEFAULT_BOARD_DEFAULTS: BoardDefaults = {
   cableConfig: 'multicore',
   conductorMaterial: 'copper',
   referenceMethod: 'C',
+  armoured: false,
 }
 
 export function newCircuit(ref: string): BoardCircuit {
@@ -133,6 +136,7 @@ function toLvInput(c: BoardCircuit, d: BoardDefaults, groupSize: number): LvCabl
     cableLength: c.cableLength,
     insulation: c.insulation ?? d.insulation,
     cableConfig: c.cableConfig ?? d.cableConfig,
+    armoured: d.armoured,
     parallelCircuits: 1,
     ambientTemp: d.ambientTemp,
     groupedCircuits: groupSize,

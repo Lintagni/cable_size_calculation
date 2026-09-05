@@ -89,13 +89,13 @@ export default function Verification() {
           title="4 · Sub-main in trunking"
           brief="63 A three-phase XLPE multicore in trunking on a wall (method B2), 45 m, protected by an MCCB. A typical sub-main to a secondary board."
           table="4E1A"
-          input={{ ...BASE, phases: 3, voltage: 400, designCurrent: 63, deviceRating: 63, cableLength: 45, referenceMethod: 'B2', insulation: 'XLPE', protectiveDevice: 'MCCB' }}
+          input={{ ...BASE, phases: 3, voltage: 400, designCurrent: 63, deviceRating: 63, cableLength: 45, referenceMethod: 'B', insulation: 'XLPE', protectiveDevice: 'MCCB' }}
         />
 
         <WorkedExample
           id="ex-5"
           title="5 · High ambient temperature"
-          brief="100 A three-phase in a 50 °C plant room. Ca = 0.82 eats the headroom rather than the size: the same circuit at 30 °C has Iz = 129.0 A, and at 50 °C it is 105.8 A — still above the 100 A device, but only just."
+          brief="100 A three-phase in a 50 °C plant room. Ca = 0.82 costs a full conductor size: the same circuit at 30 °C sizes at 25 mm², but at 50 °C that size derates to Iz = 97.6 A — below the 100 A device — so it steps up to 35 mm²."
           table="4E1A"
           input={{ ...BASE, phases: 3, voltage: 400, designCurrent: 100, deviceRating: 100, cableLength: 25, referenceMethod: 'C', insulation: 'XLPE', ambientTemp: 50, protectiveDevice: 'MCCB' }}
         />

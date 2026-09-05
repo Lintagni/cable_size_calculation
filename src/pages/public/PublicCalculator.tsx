@@ -20,7 +20,7 @@ import type { RefMethod } from '../../calculators/lvCableSizing'
  * told the site's highest-impression URL was a duplicate of "/".
  */
 
-const METHODS: RefMethod[] = ['C', 'B1', 'B2', 'A1', 'A2', 'E', 'F']
+const METHODS: RefMethod[] = ['C', 'B', 'A', 'E', 'F']
 
 // The union of methods any loaded table can rate. Listing methods the data
 // cannot serve would advertise coverage the engine does not have.

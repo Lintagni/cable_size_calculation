@@ -3,13 +3,13 @@ import PageShell from '../../components/public/PageShell'
 import RatingTable from '../../components/public/RatingTable'
 import Faq from '../../components/public/Faq'
 import Footer from '../../components/Footer'
-import { table4D1A, table4D2A, table4E1A, table4E2A } from '../../data/cableTables'
+import { table4D1A, table4D2A, table4D4A, table4E1A, table4E2A, table4E4A } from '../../data/appendix4'
 import { ambientTempFactors, groupingFactors } from '../../data/correctionFactors'
 
 const FAQ_ITEMS = [
   {
     q: 'Are these the exact BS7671 Appendix 4 figures?',
-    a: 'Yes — these are the same tables (4D1A, 4D2A, 4E1A, 4E2A, and the Table 4B1 / 4C1 correction factors) that drive the calculator on this site, transcribed from BS7671:2018 Amendment 2. Always verify against your own copy of the Regulations for a signed-off design.',
+    a: 'These are transcribed from BS7671:2018+A2 Appendix 4 and are the same arrays the calculator reads, so the published figures and the computed ones cannot diverge. They have not been independently audited by a third party, so verify against your own copy of the Regulations before signing off a design.',
   },
   {
     q: 'Why do I need to apply correction factors to the tabulated rating?',
@@ -17,11 +17,11 @@ const FAQ_ITEMS = [
   },
   {
     q: 'Which table applies to aluminium conductors?',
-    a: 'This page covers copper. Aluminium uses Tables 4D3A, 4D4A (PVC) and 4E3A, 4E4A (XLPE), with a minimum practical size of 16mm² — selectable in the full calculator.',
+    a: 'Aluminium uses the 4H series (70 °C thermoplastic) and 4J series (90 °C thermosetting). Those tables are being transcribed and are not yet available, so the calculator currently sizes copper only. Note that 4D3A/4D4A and 4E3A/4E4A are ARMOURED COPPER tables, not aluminium — a mix-up this site previously made.',
   },
   {
-    q: 'What is reference method C?',
-    a: 'Method C is a cable clipped direct to a wall or surface — one of the most common domestic and commercial installation methods, and usually the highest-rated non-buried, non-enclosed method for a given size.',
+    q: 'Why does each method have two columns?',
+    a: 'Because BS7671 publishes two figures per method: one for a two-core cable on single-phase AC or DC, and a lower one for a three- or four-core cable on three-phase AC. Using the single-phase figure for a three-phase circuit overstates capacity by roughly 10-15%, so the calculator picks the column from the number of phases you enter.',
   },
 ]
 
@@ -31,13 +31,15 @@ export default function Bs7671Tables() {
       crumbs={[{ label: 'Home', to: '/' }, { label: 'BS7671 current rating tables' }]}
       eyebrow="BS7671:2018+A2 · Appendix 4"
       title="BS7671 Cable Current Rating Tables"
-      intro="Tabulated current-carrying capacities for PVC and XLPE copper cables, plus the ambient temperature and grouping correction factors, straight from BS7671:2018 Amendment 2 Appendix 4."
+      intro="Tabulated current-carrying capacities for PVC and XLPE copper cable — plain, armoured and buried — plus the ambient temperature and grouping correction factors, from BS7671:2018+A2 Appendix 4."
     >
       <nav className="toc" aria-label="Tables on this page">
-        <a href="#table-4d1a">Table 4D1A</a>
-        <a href="#table-4d2a">Table 4D2A</a>
-        <a href="#table-4e1a">Table 4E1A</a>
-        <a href="#table-4e2a">Table 4E2A</a>
+        <a href="#table-4d1a">4D1A</a>
+        <a href="#table-4d2a">4D2A</a>
+        <a href="#table-4d4a">4D4A</a>
+        <a href="#table-4e1a">4E1A</a>
+        <a href="#table-4e2a">4E2A</a>
+        <a href="#table-4e4a">4E4A</a>
         <a href="#correction-factors">Correction factors</a>
       </nav>
 
@@ -52,28 +54,28 @@ export default function Bs7671Tables() {
         </p>
 
         <RatingTable
-          id="table-4d1a"
-          title="Table 4D1A — Multicore PVC, 70°C, copper"
-          caption="2 or 3 loaded conductors, e.g. twin-and-earth, PVC/PVC multicore, PVC/SWA/PVC"
-          rows={table4D1A}
+          table={table4D1A}
+          caption="Single-core, non-armoured, with or without sheath — e.g. singles in conduit or trunking"
         />
         <RatingTable
-          id="table-4d2a"
-          title="Table 4D2A — Single-core PVC, 70°C, copper"
-          caption="In free air, reference methods E and F"
-          rows={table4D2A}
+          table={table4D2A}
+          caption="Multicore, non-armoured — e.g. twin-and-earth, PVC/PVC multicore"
         />
         <RatingTable
-          id="table-4e1a"
-          title="Table 4E1A — Multicore XLPE, 90°C, copper"
-          caption="2 or 3 loaded conductors, e.g. XLPE/SWA/PVC, XLPE/LSZH"
-          rows={table4E1A}
+          table={table4D4A}
+          caption="Multicore armoured — PVC/SWA/PVC to BS6346. The buried Method D columns are published here"
         />
         <RatingTable
-          id="table-4e2a"
-          title="Table 4E2A — Single-core XLPE, 90°C, copper"
-          caption="In free air, reference methods E and F"
-          rows={table4E2A}
+          table={table4E1A}
+          caption="Single-core, non-armoured — 90 °C thermosetting singles"
+        />
+        <RatingTable
+          table={table4E2A}
+          caption="Multicore, non-armoured — e.g. XLPE/LSZH multicore"
+        />
+        <RatingTable
+          table={table4E4A}
+          caption="Multicore armoured — XLPE/SWA/PVC to BS5467. The buried Method D columns are published here"
         />
 
         <h2 id="correction-factors">Correction factors</h2>
