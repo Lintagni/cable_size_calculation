@@ -5,24 +5,28 @@
  * (UK registered trade mark UK00002586954, Castline Systems). That name has
  * been withdrawn in full.
  *
- * Everything brand-facing now reads from here, so adopting the replacement
- * name is a one-line change rather than a hunt through thirty files. The
- * current values are deliberately plain and descriptive — a description of
- * what the tool does cannot itself infringe anyone's mark, which makes this a
- * safe state to sit in while the new name is chosen and cleared.
+ * Everything brand-facing reads from here, so changing the name again is a
+ * one-line edit rather than a hunt through thirty files.
  *
- * When the new name is settled: change these five constants, swap the logo and
- * favicon assets in public/, and update SITE_URL in src/lib/seo.ts.
+ * "Conductra" was chosen because it is distinctive rather than descriptive
+ * (which makes it defensible), and because searches of Companies House and the
+ * general web found no user of it in this or any adjacent field. That is NOT a
+ * formal clearance search — the UK IPO register blocks automated access, so a
+ * Class 9 search on the register, and ideally a paid clearance search, should
+ * be done before the name is relied on commercially.
+ *
+ * If it changes again: edit the constants below, regenerate the icons in
+ * public/, and update SITE_URL in src/lib/seo.ts.
  */
 
 /** Full product name, used in titles, reports and structured data. */
-export const BRAND_NAME = 'BS7671 Cable Sizing'
+export const BRAND_NAME = 'Conductra'
 
 /** Short form for tight spaces — navbar, PWA short_name, tab titles. */
-export const BRAND_SHORT = 'Cable Sizing'
+export const BRAND_SHORT = 'Conductra'
 
 /** Two-character mark for the navbar badge and auth screens. */
-export const BRAND_MARK = 'BS'
+export const BRAND_MARK = 'Co'
 
 /** One-line description used in meta tags and the PWA manifest. */
 export const BRAND_TAGLINE =

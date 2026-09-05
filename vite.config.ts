@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon-180x180.png', 'logo.svg'],
       manifest: {
-        name: 'BS7671 Cable Sizing',
-        short_name: 'Cable Sizing',
+        name: 'Conductra — BS7671 Cable Sizing',
+        short_name: 'Conductra',
         description: 'Free BS7671:2018+A2 cable size calculator. LV cable sizing, voltage drop, short circuit, motor cables, board schedules, ABC overhead and busbars.',
         theme_color: '#1a1625',
         background_color: '#faf9f7',

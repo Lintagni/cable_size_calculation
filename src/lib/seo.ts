@@ -76,7 +76,7 @@ const website = {
 export const ROUTES: RouteSeo[] = [
   {
     path: '/',
-    title: 'BS7671 Cable Size Calculator',
+    title: `BS7671 Cable Size Calculator | ${BRAND_NAME}`,
     description:
       'BS7671:2018+A2 cable size calculator for UK electrical design. LV cable sizing with correction factors, voltage drop to Section 525 and adiabatic short circuit checks.',
     prerender: true,
@@ -86,7 +86,7 @@ export const ROUTES: RouteSeo[] = [
     // Public since the auth wall was lifted: anonymous visitors and crawlers
     // get pages/public/PublicCalculator, which is what gets prerendered here.
     path: '/calculator',
-    title: 'BS7671 Cable Size Calculator | Free, No Login',
+    title: `BS7671 Cable Size Calculator | Free, No Login | ${BRAND_NAME}`,
     description:
       'Free BS7671:2018+A2 cable size calculator. Enter design current, installation method, length, ambient temperature and grouping for a compliant LV cable size with correction factors and voltage drop.',
     prerender: true,
@@ -107,7 +107,7 @@ export const ROUTES: RouteSeo[] = [
   },
   {
     path: '/calculator/swa-armoured-cable-size',
-    title: 'SWA & Armoured Cable Size Calculator | BS7671',
+    title: `SWA & Armoured Cable Size Calculator | BS7671 | ${BRAND_NAME}`,
     description:
       'Free SWA and armoured cable size calculator to BS7671. Current rating, correction factors and voltage drop for PVC or XLPE, clipped direct or buried.',
     prerender: true,
@@ -123,7 +123,7 @@ export const ROUTES: RouteSeo[] = [
   },
   {
     path: '/calculator/voltage-drop',
-    title: 'Voltage Drop Calculator | BS7671 Section 525',
+    title: `Voltage Drop Calculator | BS7671 Section 525 | ${BRAND_NAME}`,
     description:
       'Free voltage drop calculator to BS7671 Section 525. Check cable voltage drop against the 3% lighting / 5% power limits for any length, load and cable size.',
     prerender: true,
@@ -139,7 +139,7 @@ export const ROUTES: RouteSeo[] = [
   },
   {
     path: '/calculator/shower-cable-size',
-    title: 'Electric Shower Cable Size Calculator | BS7671',
+    title: `Electric Shower Cable Size Calculator | BS7671 | ${BRAND_NAME}`,
     description:
       'Free electric shower cable size calculator to BS7671. Current rating and voltage drop for any shower kW rating, run length and installation method.',
     prerender: true,
@@ -155,7 +155,7 @@ export const ROUTES: RouteSeo[] = [
   },
   {
     path: '/guides/bs7671-cable-sizing-explained',
-    title: 'BS7671 Cable Sizing Explained | Step-by-Step Guide',
+    title: `BS7671 Cable Sizing Explained | Step-by-Step Guide | ${BRAND_NAME}`,
     description:
       'How BS7671:2018+A2 sizes a cable, step by step: design current, correction factors, current rating, voltage drop and the adiabatic check, with a worked calculator.',
     prerender: true,
@@ -172,7 +172,7 @@ export const ROUTES: RouteSeo[] = [
   },
   {
     path: '/tables/bs7671-cable-current-rating-tables',
-    title: 'BS7671 Cable Current Rating Tables | Appendix 4',
+    title: `BS7671 Cable Current Rating Tables | Appendix 4 | ${BRAND_NAME}`,
     description:
       'BS7671 Appendix 4 current-carrying capacity tables (4D1A, 4D2A, 4E1A, 4E2A) for PVC and XLPE copper cable, plus ambient temperature and grouping correction factors.',
     prerender: true,
@@ -188,7 +188,7 @@ export const ROUTES: RouteSeo[] = [
   },
   {
     path: '/methodology',
-    title: 'How It Calculates | BS7671 Methodology',
+    title: `How It Calculates | BS7671 Methodology | ${BRAND_NAME}`,
     description:
       'The standard, tables and arithmetic behind the calculator: BS7671:2018+A2 Appendix 4, Regulation 433.1.1 and Section 525 — and what is deliberately not implemented.',
     prerender: true,
@@ -205,7 +205,7 @@ export const ROUTES: RouteSeo[] = [
   },
   {
     path: '/verification',
-    title: 'Worked Examples, Checked Step by Step',
+    title: `Worked Examples, Checked Step by Step | ${BRAND_NAME}`,
     description:
       'Five BS7671 cable sizing cases run through the live engine with every correction factor, derated capacity and voltage drop printed, so each step can be checked against the standard.',
     prerender: true,
@@ -222,14 +222,14 @@ export const ROUTES: RouteSeo[] = [
   },
   {
     path: '/ai',
-    title: 'AI Cable Sizing Assistant',
+    title: `AI Cable Sizing Assistant | ${BRAND_NAME}`,
     description:
       'Describe a circuit in plain English and get a BS7671-compliant cable size, with the calculation steps and regulation references explained.',
     prerender: false,
   },
   {
     path: '/dashboard',
-    title: 'Calculation History',
+    title: `Calculation History | ${BRAND_NAME}`,
     description: 'Your saved BS7671 cable sizing calculations.',
     prerender: false,
   },
@@ -237,7 +237,7 @@ export const ROUTES: RouteSeo[] = [
     // Prerendered to dist/404.html rather than dist/404/index.html so Vercel
     // serves it with a real 404 status for unmatched paths.
     path: '/404',
-    title: 'Page not found',
+    title: `Page not found | ${BRAND_NAME}`,
     description: `That page does not exist on ${BRAND_NAME}.`,
     prerender: true,
     noindex: true,
