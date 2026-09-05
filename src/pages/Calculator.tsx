@@ -11,6 +11,8 @@ import MotorCableForm from '../components/calculator/MotorCableForm'
 import AbcCableForm from '../components/calculator/AbcCableForm'
 import BusbarForm from '../components/calculator/BusbarForm'
 import BoardForm from '../components/calculator/BoardForm'
+import CalculatorReference from '../components/public/CalculatorReference'
+import Footer from '../components/Footer'
 import { useActivePlan } from '../store/planStore'
 import { useAiQuotaStore, getRemaining, PLAN_MONTHLY_QUOTA } from '../store/aiQuotaStore'
 import { useHistoryStore } from '../store/historyStore'
@@ -258,7 +260,13 @@ export default function Calculator() {
           {active === 'motor'  && <MotorCableForm />}
           {active === 'abc'    && <AbcCableForm externalInputs={abcInputs} />}
           {active === 'busbar' && <BusbarForm externalInputs={busbarInputs} />}
+
+          {/* Reference material. Kept on the page for everyone rather than
+              split onto a separate anonymous-only page, so what a crawler
+              indexes and what a visitor reads are the same thing. */}
+          <CalculatorReference />
         </div>
+        <Footer />
       </div>
     </div>
   )

@@ -13,7 +13,6 @@ import VoltageDropCalculator from './pages/public/VoltageDropCalculator'
 import ShowerCableCalculator from './pages/public/ShowerCableCalculator'
 import Bs7671Guide from './pages/public/Bs7671Guide'
 import Bs7671Tables from './pages/public/Bs7671Tables'
-import PublicCalculator from './pages/public/PublicCalculator'
 import Methodology from './pages/public/Methodology'
 import Verification from './pages/public/Verification'
 import NotFound from './pages/NotFound'
@@ -36,17 +35,13 @@ function ProtectedShell({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * /calculator is public. Anonymous visitors (and crawlers) get PublicCalculator
- * — the same BS7671 engine plus the reference content, prerendered to static
- * HTML at build time. A signed-in session gets the full workspace instead.
+ * /calculator is public and complete.
  *
- * While Supabase is still resolving the session we render the public page
- * rather than a spinner: it is the correct answer for the majority case and
- * avoids a flash of empty layout.
+ * Every calculator is free, so there is no reason to hold six of the seven tabs
+ * behind a login — anonymous visitors get the same workspace a signed-in user
+ * does. Signing in adds saved history and the AI assistant, not access.
  */
 function CalculatorRoute() {
-  const { user, initialised } = useAuthStore()
-  if (!initialised || !user) return <PublicCalculator />
   return (
     <>
       <Navbar />

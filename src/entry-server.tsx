@@ -10,7 +10,8 @@ import VoltageDropCalculator from './pages/public/VoltageDropCalculator'
 import ShowerCableCalculator from './pages/public/ShowerCableCalculator'
 import Bs7671Guide from './pages/public/Bs7671Guide'
 import Bs7671Tables from './pages/public/Bs7671Tables'
-import PublicCalculator from './pages/public/PublicCalculator'
+import Navbar from './components/Navbar'
+import Calculator from './pages/Calculator'
 import Methodology from './pages/public/Methodology'
 import Verification from './pages/public/Verification'
 import NotFound from './pages/NotFound'
@@ -34,7 +35,7 @@ const SHELL_WRAPPED: Record<string, React.ComponentType> = {
 }
 
 const SELF_CONTAINED: Record<string, React.ComponentType> = {
-  '/calculator': PublicCalculator,
+  '/calculator': () => (<><Navbar /><Calculator /></>),
   '/methodology': Methodology,
   '/verification': Verification,
   '/404': NotFound,
