@@ -1,3 +1,4 @@
+import { BRAND_NAME, BRAND_MARK, OPERATOR } from '../config/brand'
 import { Link } from 'react-router-dom'
 
 /**
@@ -11,9 +12,9 @@ export default function Footer() {
     <footer className="footer">
       <div className="container footer-inner">
         <div className="footer-brand">
-          <div className="brand-mark">CC</div>
+          <div className="brand-mark">{BRAND_MARK}</div>
           <div>
-            <div>CableCalc</div>
+            <div>{BRAND_NAME}</div>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)' }}>BS7671 · NFC · IEC</div>
           </div>
         </div>
@@ -23,8 +24,7 @@ export default function Footer() {
             <Link to="/calculator">Calculator</Link>
             <Link to="/ai">AI assistant</Link>
             <Link to="/dashboard">History</Link>
-            <Link to="/pricing">Pricing</Link>
-          </div>
+                      </div>
           <div>
             <h5>Calculators</h5>
             <Link to="/calculator/swa-armoured-cable-size">SWA armoured cable size</Link>
@@ -43,14 +43,14 @@ export default function Footer() {
       {/* Stated plainly rather than buried in terms: professionals trust a tool
           more when it is honest about where its responsibility ends. */}
       <div className="container footer-disclaimer">
-        Calculated to BS7671:2018+A2. CableCalc is a design aid, not a substitute for a
+        Calculated to BS7671:2018+A2. {BRAND_NAME} is a design aid, not a substitute for a
         competent designer — the person signing the certificate remains responsible for the
         design under BS7671. See <Link to="/methodology">how it calculates</Link> and the{' '}
         <Link to="/verification">worked examples</Link>.
       </div>
       <div className="footer-bottom">
-        <span>© 2026 CableCalc Ltd.</span>
-        <span style={{ fontFamily: 'var(--font-mono)' }}>v3.2.1 · BS7671:2018+A2</span>
+        <span>© 2026 {OPERATOR.name || BRAND_NAME}</span>
+        <span style={{ fontFamily: 'var(--font-mono)' }}>BS7671:2018+A2</span>
       </div>
     </footer>
   )

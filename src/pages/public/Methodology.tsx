@@ -53,7 +53,7 @@ export default function Methodology() {
     <PageShell
       crumbs={[{ label: 'Home', to: '/' }, { label: 'How it calculates' }]}
       eyebrow="Methodology"
-      title="How CableCalc Calculates"
+      title="How It Calculates"
       intro="The standard it implements, the tables it reads, the arithmetic it performs — and, just as importantly, what it deliberately leaves out."
     >
       <article className="article">

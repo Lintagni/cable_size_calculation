@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Zap, TrendingDown, AlertTriangle, Cpu, Radio,
-  LayoutGrid, ChevronRight, Lock, ArrowUpRight, Download, Sparkles, Clock, Table2,
+  LayoutGrid, ChevronRight, Download, Sparkles, Clock, Table2,
 } from 'lucide-react'
 import LvCableSizingForm from '../components/calculator/LvCableSizingForm'
 import VoltageDropForm from '../components/calculator/VoltageDropForm'
@@ -23,19 +23,14 @@ import type { BusbarInput } from '../calculators/busbarSizing'
 type Plan  = 'free' | 'pro' | 'business'
 type TabId = 'lv' | 'vdrop' | 'board' | 'sc' | 'motor' | 'abc' | 'busbar'
 
-const PLAN_RANK: Record<Plan, number> = { free: 0, pro: 1, business: 2 }
-function planAllows(userPlan: Plan, minPlan: string) {
-  return PLAN_RANK[userPlan] >= PLAN_RANK[minPlan as Plan]
-}
-
-const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ size?: number }>; minPlan: string }[] = [
-  { id: 'lv',     label: 'LV Cable',      Icon: Zap,           minPlan: 'free' },
-  { id: 'vdrop',  label: 'Voltage Drop',  Icon: TrendingDown,  minPlan: 'free' },
-  { id: 'board',  label: 'Board Schedule', Icon: Table2,      minPlan: 'pro'  },
-  { id: 'sc',     label: 'Short Circuit', Icon: AlertTriangle, minPlan: 'pro'  },
-  { id: 'motor',  label: 'Motor Cable',   Icon: Cpu,           minPlan: 'pro'  },
-  { id: 'abc',    label: 'ABC Cable',     Icon: Radio,         minPlan: 'business' },
-  { id: 'busbar', label: 'Busbar Sizing', Icon: LayoutGrid,    minPlan: 'business' },
+const TABS: { id: TabId; label: string; Icon: React.ComponentType<{ size?: number }> }[] = [
+  { id: 'lv',     label: 'LV Cable',      Icon: Zap },
+  { id: 'vdrop',  label: 'Voltage Drop',  Icon: TrendingDown },
+  { id: 'board',  label: 'Board Schedule', Icon: Table2  },
+  { id: 'sc',     label: 'Short Circuit', Icon: AlertTriangle  },
+  { id: 'motor',  label: 'Motor Cable',   Icon: Cpu  },
+  { id: 'abc',    label: 'ABC Cable',     Icon: Radio },
+  { id: 'busbar', label: 'Busbar Sizing', Icon: LayoutGrid },
 ]
 
 const TAB_LABELS: Record<TabId, string> = {
@@ -52,31 +47,6 @@ const TAB_DESC: Record<TabId, string> = {
   motor:  'Derive design current from motor kW, efficiency and power factor.',
   abc:    'Aerial Bundle Conductor sizing per NFC 33-209.',
   busbar: 'Busbar sizing per IEC 60439 / BS EN 61439.',
-}
-
-// ─── Upgrade banner ───────────────────────────────────────────────────────────
-function UpgradeBanner({ tier }: { tier: 'pro' | 'business' }) {
-  const isPro = tier === 'pro'
-  return (
-    <div className="upgrade-banner">
-      <div style={{
-        width: 48, height: 48, borderRadius: 'var(--r-lg)',
-        background: 'var(--accent-soft)', border: '1px solid var(--accent-line)',
-        display: 'grid', placeItems: 'center', margin: '0 auto', color: 'var(--accent-ink)',
-      }}>
-        <Lock size={20} />
-      </div>
-      <h3>{isPro ? 'Pro Plan Required' : 'Business Plan Required'}</h3>
-      <p>
-        {isPro
-          ? 'Short circuit and motor cable sizing require Pro ($12.99/mo). Includes 500 AI credits/mo, aluminium cables, and PDF reports.'
-          : 'ABC cable and busbar sizing require Business ($34.99/mo). Includes 3,000 AI credits/mo, API access, and custom report branding.'}
-      </p>
-      <Link to="/pricing" className="btn btn-accent">
-        View pricing <ArrowUpRight size={14} />
-      </Link>
-    </div>
-  )
 }
 
 // ─── Project meta bar ─────────────────────────────────────────────────────────
@@ -155,12 +125,10 @@ export default function Calculator() {
   // Only the LV tab tracks a result object at this level, so that is the only
   // tab that can produce a report from here. The other tabs export from their
   // own result cards.
-  const isPro     = planAllows(plan as Plan, 'pro')
-  const canExport = active === 'lv' && !!currentResult && isPro
+  const canExport = active === 'lv' && !!currentResult
   const exportHint = active !== 'lv'
     ? 'PDF export is available from the LV Cable tab'
     : !currentResult ? 'Run a calculation first'
-    : !isPro ? 'PDF export requires the Pro plan'
     : 'Download a BS7671 calculation sheet for this circuit'
 
   async function handleExportPdf() {
@@ -266,27 +234,16 @@ export default function Calculator() {
 
           {/* Tab strip */}
           <div className="calc-tabs">
-            {TABS.map(tab => {
-              const allowed = planAllows(plan as Plan, tab.minPlan)
-              const isPro   = tab.minPlan === 'pro'
-              const isBiz   = tab.minPlan === 'business'
-              return (
-                <button
-                  key={tab.id}
-                  className={`calc-tab${active === tab.id ? ' active' : ''}`}
-                  onClick={() => setActive(tab.id)}
-                  style={{ opacity: !allowed ? 0.45 : undefined }}
-                  title={!allowed ? `${isPro ? 'Pro' : 'Business'} plan required` : undefined}
-                >
-                  <tab.Icon size={13} />
-                  {tab.label}
-                  {!allowed && <Lock size={11} style={{ color: 'var(--ink-4)' }} />}
-                  {allowed && isPro  && <span className="tab-badge">PRO</span>}
-                  {allowed && isBiz  && <span className="tab-badge">BIZ</span>}
-                </button>
-              )
-            })}
-
+            {TABS.map(tab => (
+              <button
+                key={tab.id}
+                className={`calc-tab${active === tab.id ? ' active' : ''}`}
+                onClick={() => setActive(tab.id)}
+              >
+                <tab.Icon size={13} />
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -296,11 +253,11 @@ export default function Calculator() {
         <div className="container" style={{ paddingTop: 32, paddingBottom: 48 }}>
           {active === 'lv'     && <LvCableSizingForm externalInputs={lvInputs} onResultChange={setCurrentResult} />}
           {active === 'vdrop'  && <VoltageDropForm />}
-          {active === 'board'  && (planAllows(plan as Plan, 'pro')      ? <BoardForm />       : <UpgradeBanner tier="pro" />)}
-          {active === 'sc'     && (planAllows(plan as Plan, 'pro')      ? <ShortCircuitForm /> : <UpgradeBanner tier="pro" />)}
-          {active === 'motor'  && (planAllows(plan as Plan, 'pro')      ? <MotorCableForm />  : <UpgradeBanner tier="pro" />)}
-          {active === 'abc'    && (planAllows(plan as Plan, 'business') ? <AbcCableForm externalInputs={abcInputs} /> : <UpgradeBanner tier="business" />)}
-          {active === 'busbar' && (planAllows(plan as Plan, 'business') ? <BusbarForm externalInputs={busbarInputs} /> : <UpgradeBanner tier="business" />)}
+          {active === 'board'  && <BoardForm />}
+          {active === 'sc'  && <ShortCircuitForm />}
+          {active === 'motor'  && <MotorCableForm />}
+          {active === 'abc'    && <AbcCableForm externalInputs={abcInputs} />}
+          {active === 'busbar' && <BusbarForm externalInputs={busbarInputs} />}
         </div>
       </div>
     </div>

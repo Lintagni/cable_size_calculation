@@ -29,9 +29,15 @@ export const usePlanStore = create<PlanStore>()(
   ),
 )
 
-/** Returns effective plan — 'business' when test mode is ON, real plan otherwise. */
+/**
+ * Effective plan.
+ *
+ * The paid tiers were withdrawn in September 2026 — every calculator is free
+ * and there is no checkout. This returns the top tier unconditionally so the
+ * existing `planAllows` gates all pass, rather than ripping the plan concept
+ * out of a dozen call sites in one change. The stored `plan` value is left
+ * alone; nothing reads it for gating any more.
+ */
 export function useActivePlan(): Plan {
-  const plan     = usePlanStore(s => s.plan)
-  const testMode = usePlanStore(s => s.testMode)
-  return testMode ? 'business' : plan
+  return 'business'
 }

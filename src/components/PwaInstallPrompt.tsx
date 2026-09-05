@@ -1,3 +1,4 @@
+import { BRAND_NAME } from '../config/brand'
 import { useState, useEffect } from 'react'
 import { Download, X } from 'lucide-react'
 
@@ -53,12 +54,12 @@ export default function PwaInstallPrompt() {
       animation: 'fade-in 0.25s ease-out both',
     }}>
       {/* Icon */}
-      <img src="/pwa-64x64.png" alt="CableCalc" style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }} />
+      <img src="/pwa-64x64.png" alt={BRAND_NAME} style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0 }} />
 
       {/* Text */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--ink)' }}>
-          Install CableCalc
+          Install {BRAND_NAME}
         </p>
         <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-3)', marginTop: 1 }}>
           Add to home screen for quick access

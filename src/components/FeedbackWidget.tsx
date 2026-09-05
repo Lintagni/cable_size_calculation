@@ -1,3 +1,4 @@
+import { BRAND_NAME } from '../config/brand'
 import { useState } from 'react'
 import { MessageSquarePlus, X, Star, Send, CheckCircle2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -91,7 +92,7 @@ export default function FeedbackWidget() {
               <div style={{ padding: '40px 24px', textAlign: 'center' }}>
                 <CheckCircle2 size={36} style={{ color: 'var(--ok)', marginBottom: 12 }} />
                 <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--ink)', marginBottom: 6 }}>Thank you!</div>
-                <div style={{ fontSize: 13, color: 'var(--ink-3)' }}>Your feedback helps improve CableCalc.</div>
+                <div style={{ fontSize: 13, color: 'var(--ink-3)' }}>Your feedback helps improve {BRAND_NAME}.</div>
               </div>
             ) : (
               <div className="feedback-body">
@@ -114,7 +115,7 @@ export default function FeedbackWidget() {
                 <div className="feedback-input-area">
                   {category === 'rate' ? (
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 12 }}>How would you rate CableCalc?</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 12 }}>How would you rate {BRAND_NAME}?</div>
                       <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
                         {[1,2,3,4,5].map(n => (
                           <button

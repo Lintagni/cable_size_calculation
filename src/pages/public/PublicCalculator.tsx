@@ -32,7 +32,7 @@ const SUPPORTED = [...new Set([
 const FAQ_ITEMS = [
   {
     q: 'Is this BS7671 cable calculator free to use?',
-    a: 'Yes. LV cable sizing and the voltage drop check run in the browser with no account and no limit — the calculator on this page uses the same BS7671:2018+A2 engine as the paid product. A free account adds saved calculation history and the AI assistant; short circuit, motor cable, ABC and busbar sizing are paid tiers.',
+    a: 'Yes. LV cable sizing and the voltage drop check run in the browser with no account and no limit — the calculator on this page uses the same BS7671:2018+A2 engine as the paid product. Every calculator is free with no paid tiers. A free account adds saved calculation history and the AI assistant.',
   },
   {
     q: 'Which BS7671 tables does it use?',
@@ -49,10 +49,6 @@ const FAQ_ITEMS = [
   {
     q: 'Is a calculator result enough on its own for a design?',
     a: 'No. It gives you a compliant starting size fast and shows every intermediate figure so you can check the working, but the designer remains responsible for the design under BS7671. Verify the installation method, the assumed ambient temperature, grouping and any thermal insulation against the real installation.',
-  },
-  {
-    q: 'Is this CableCalc BS7671 by Castline Systems?',
-    a: 'No — unrelated. CableCalc BS7671 is a long-standing desktop application from Castline Systems. This site (cablecalc.org) is a separate browser-based BS7671 calculator with no connection to that product or company.',
   },
 ]
 

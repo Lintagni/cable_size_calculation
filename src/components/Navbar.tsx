@@ -1,5 +1,6 @@
+import { BRAND_MARK, BRAND_SHORT } from '../config/brand'
 import { Link, useLocation } from 'react-router-dom'
-import { Moon, Sun, Calculator, Sparkles, Clock, Tag, Home } from 'lucide-react'
+import { Moon, Sun, Calculator, Sparkles, Clock, Home } from 'lucide-react'
 import { useThemeStore } from '../store/themeStore'
 import { useAuthStore } from '../store/authStore'
 import { usePlanStore } from '../store/planStore'
@@ -11,7 +12,6 @@ const navItems = [
   { to: '/calculator', label: 'Calc',    Icon: Calculator },
   { to: '/ai',         label: 'AI',      Icon: Sparkles   },
   { to: '/dashboard',  label: 'History', Icon: Clock      },
-  { to: '/pricing',    label: 'Pricing', Icon: Tag        },
 ]
 
 export default function Navbar() {
@@ -28,7 +28,7 @@ export default function Navbar() {
     pathname.startsWith('/calculator') ? 'Calc'    :
     pathname.startsWith('/ai')         ? 'AI'      :
     pathname.startsWith('/dashboard')  ? 'History' :
-    pathname.startsWith('/pricing')    ? 'Pricing' : ''
+    ''
 
   return (
     <>
@@ -36,8 +36,8 @@ export default function Navbar() {
       <header className="topbar">
         {/* Brand */}
         <Link to="/" className="brand">
-          <div className="brand-mark">CC</div>
-          <span>CableCalc</span>
+          <div className="brand-mark">{BRAND_MARK}</div>
+          <span>{BRAND_SHORT}</span>
           <span className="brand-meta">BS7671 · NFC · IEC</span>
         </Link>
 

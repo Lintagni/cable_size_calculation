@@ -54,7 +54,7 @@ export default function Verification() {
         <p>
           If you find a discrepancy, it is a bug and we want to know:{' '}
           the feedback button on any page reaches us directly.{' '}
-          <Link to="/methodology">How CableCalc calculates</Link> sets out the scope and the
+          <Link to="/methodology">How it calculates</Link> sets out the scope and the
           deliberate exclusions.
         </p>
       </article>

@@ -1,3 +1,4 @@
+import { BRAND_NAME } from '../config/brand'
 import { Link } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
@@ -24,7 +25,7 @@ export default function NotFound() {
             <span className="section-eyebrow">Error 404</span>
             <h1>Page not found</h1>
             <p>
-              That URL doesn&rsquo;t exist on CableCalc. It may have moved, or the link that
+              That URL doesn&rsquo;t exist on {BRAND_NAME}. It may have moved, or the link that
               brought you here may be wrong.
             </p>
           </div>

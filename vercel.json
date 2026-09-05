@@ -3,7 +3,6 @@
   "outputDirectory": "dist",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/pricing", "destination": "/pricing/index.html" },
     { "source": "/calculator", "destination": "/calculator/index.html" },
     { "source": "/calculator/swa-armoured-cable-size", "destination": "/calculator/swa-armoured-cable-size/index.html" },
     { "source": "/calculator/voltage-drop", "destination": "/calculator/voltage-drop/index.html" },
@@ -14,7 +13,6 @@
     { "source": "/verification", "destination": "/verification/index.html" },
     { "source": "/ai", "destination": "/index.html" },
     { "source": "/dashboard", "destination": "/index.html" },
-    { "source": "/admin", "destination": "/index.html" },
-    { "source": "/payment-success", "destination": "/index.html" }
+    { "source": "/admin", "destination": "/index.html" }
   ]
 }

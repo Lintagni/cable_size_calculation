@@ -11,9 +11,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon-180x180.png', 'logo.svg'],
       manifest: {
-        name: 'CableCalc — BS7671 Cable Sizing',
-        short_name: 'CableCalc',
-        description: 'BS7671:2018+A2 cable size calculator for engineers. LV cable sizing, voltage drop, short circuit, motor cables, ABC overhead, and busbars.',
+        name: 'BS7671 Cable Sizing',
+        short_name: 'Cable Sizing',
+        description: 'Free BS7671:2018+A2 cable size calculator. LV cable sizing, voltage drop, short circuit, motor cables, board schedules, ABC overhead and busbars.',
         theme_color: '#1a1625',
         background_color: '#faf9f7',
         display: 'standalone',

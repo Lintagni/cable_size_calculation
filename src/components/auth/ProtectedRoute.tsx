@@ -1,3 +1,4 @@
+import { BRAND_NAME, BRAND_MARK } from '../../config/brand'
 import { useState } from 'react'
 import { Loader2, Sparkles, Zap, Shield } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
@@ -35,8 +36,8 @@ export default function ProtectedRoute({ children }: Props) {
       }}>
         {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 40 }}>
-          <div className="brand-mark">CC</div>
-          <span style={{ fontWeight: 700, fontSize: 18, color: 'var(--ink)' }}>CableCalc</span>
+          <div className="brand-mark">{BRAND_MARK}</div>
+          <span style={{ fontWeight: 700, fontSize: 18, color: 'var(--ink)' }}>{BRAND_NAME}</span>
           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--ink-3)' }}>BS7671</span>
         </div>
 

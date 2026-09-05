@@ -7,9 +7,7 @@ import Landing from './pages/Landing'
 import Calculator from './pages/Calculator'
 import AiPage from './pages/AiPage'
 import Dashboard from './pages/Dashboard'
-import Pricing from './pages/Pricing'
 import Admin from './pages/Admin'
-import PaymentSuccess from './pages/PaymentSuccess'
 import SwaArmouredCalculator from './pages/public/SwaArmouredCalculator'
 import VoltageDropCalculator from './pages/public/VoltageDropCalculator'
 import ShowerCableCalculator from './pages/public/ShowerCableCalculator'
@@ -106,7 +104,6 @@ export default function App() {
       <Routes>
         {/* Public pages */}
         <Route path="/"        element={<Shell><Landing /></Shell>} />
-        <Route path="/pricing" element={<Shell><Pricing /></Shell>} />
 
         {/* Public content pages — no login required, compose their own chrome via PageShell */}
         <Route path="/calculator/swa-armoured-cable-size"      element={<SwaArmouredCalculator />} />
@@ -126,9 +123,6 @@ export default function App() {
 
         {/* Admin */}
         <Route path="/admin" element={<Shell><Admin /></Shell>} />
-
-        {/* Misc */}
-        <Route path="/payment-success" element={<PaymentSuccess />} />
 
         {/* Anything else. Vercel serves dist/404.html with a 404 status for
             unmatched paths; this covers client-side navigation to a bad URL. */}

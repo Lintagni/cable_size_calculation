@@ -18,10 +18,20 @@ interface AiQuotaStore {
 }
 
 // Monthly credit limits per plan
+/**
+ * Monthly AI allowance per account.
+ *
+ * The calculators are all free, but AI answers cost real money on the
+ * operator's Anthropic key, so this stays capped — "free" must not mean
+ * "anyone can run up an unbounded API bill". One allowance for everyone now
+ * that the tiers are gone; raise it deliberately, not by accident.
+ */
+const MONTHLY_AI_CREDITS = 100
+
 export const PLAN_MONTHLY_QUOTA: Record<string, number> = {
-  free:     50,
-  pro:      500,
-  business: 3000,
+  free:     MONTHLY_AI_CREDITS,
+  pro:      MONTHLY_AI_CREDITS,
+  business: MONTHLY_AI_CREDITS,
 }
 
 // Credit weight per model (reflects real API cost ratio).

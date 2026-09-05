@@ -44,8 +44,8 @@ export default function Landing() {
               <Link to="/calculator" className="btn btn-primary btn-lg">
                 Open calculator
               </Link>
-              <Link to="/pricing" className="btn btn-lg">
-                View pricing
+              <Link to="/methodology" className="btn btn-lg">
+                How it calculates
               </Link>
             </div>
             <div className="hero-meta">

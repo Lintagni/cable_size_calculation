@@ -1,3 +1,4 @@
+import { BRAND_NAME } from '../../config/brand'
 import { useState } from 'react'
 import { X, Zap, Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
@@ -234,7 +235,7 @@ export default function AuthModal({ onClose, defaultTab = 'signin', embedded = f
             }}>
               <Zap size={15} style={{ color: 'var(--accent-fg)' }} />
             </div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', fontFamily: 'var(--font-mono)' }}>CableCalc</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', fontFamily: 'var(--font-mono)' }}>{BRAND_NAME}</span>
           </div>
           <button
             onClick={onClose}

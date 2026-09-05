@@ -5,7 +5,6 @@ import { renderToString } from 'react-dom/server'
 import { StaticRouter } from 'react-router'
 import Shell from './components/Shell'
 import Landing from './pages/Landing'
-import Pricing from './pages/Pricing'
 import SwaArmouredCalculator from './pages/public/SwaArmouredCalculator'
 import VoltageDropCalculator from './pages/public/VoltageDropCalculator'
 import ShowerCableCalculator from './pages/public/ShowerCableCalculator'
@@ -32,7 +31,6 @@ export { ROUTES, SITE_URL, SITE_NAME, OG_IMAGE, jsonLdFor } from './lib/seo'
  */
 const SHELL_WRAPPED: Record<string, React.ComponentType> = {
   '/': Landing,
-  '/pricing': Pricing,
 }
 
 const SELF_CONTAINED: Record<string, React.ComponentType> = {

@@ -17,7 +17,7 @@ function FaqItem({ q, a }: FaqEntry) {
 }
 
 /**
- * Renders visibly (accordion, matches Pricing.tsx) AND emits an FAQPage
+ * Renders visibly (accordion) AND emits an FAQPage
  * JSON-LD block, since the visible accordion answers are collapsed by
  * default and would otherwise be invisible to a renderer that doesn't
  * execute the click.

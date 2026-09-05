@@ -8,7 +8,6 @@ import { useAiModelStore, AI_MODELS, SELECTABLE_MODEL_IDS } from '../../store/ai
 import type { AiModelId, RealModelId } from '../../store/aiModelStore'
 import type { LvCableResult } from '../../calculators/lvCableSizing'
 import MarkdownMessage from './MarkdownMessage'
-import BuyCreditsModal from './BuyCreditsModal'
 import CalcResultCard from './CalcResultCard'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
@@ -154,7 +153,6 @@ export default function AiChatPanel({ currentResult }: Props) {
   const remaining = getRemaining(record, plan)
 
   const [prompt, setPrompt]               = useState('')
-  const [showBuyModal, setShowBuyModal]   = useState(false)
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const [justSaved, setJustSaved]         = useState(false)
   const messagesEndRef                  = useRef<HTMLDivElement>(null)
@@ -307,19 +305,6 @@ export default function AiChatPanel({ currentResult }: Props) {
                   : <>{remaining}/{quota} cr · {MODEL_CREDIT_WEIGHT[modelId]}cr/msg</>
                 }
               </span>
-              {quota !== -1 && (
-                <button
-                  onClick={() => setShowBuyModal(true)}
-                  style={{
-                    marginLeft: 'auto', fontSize: 11, fontWeight: 600,
-                    padding: '3px 8px', borderRadius: 6,
-                    background: 'var(--surface-2)', border: '1px solid var(--line)',
-                    cursor: 'pointer', color: 'var(--ink-3)',
-                  }}
-                >
-                  Buy credits
-                </button>
-              )}
             </div>
             {/* Textarea + send */}
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, padding: '10px 12px 12px' }}>
@@ -409,8 +394,6 @@ export default function AiChatPanel({ currentResult }: Props) {
             ))}
           </div>
         </div>
-
-        {showBuyModal && <BuyCreditsModal onClose={() => setShowBuyModal(false)} />}
       </div>
     )
   }
@@ -494,17 +477,11 @@ export default function AiChatPanel({ currentResult }: Props) {
                 {plan === 'free'
                   ? 'Buy a top-up pack or upgrade to Pro for 200/month.'
                   : plan === 'pro'
-                  ? 'Buy a top-up pack or upgrade to Business for 2,000/month.'
-                  : 'Buy a top-up pack to continue.'}
+                  ? 'Your monthly AI allowance resets at the start of next month. All calculators stay free and unlimited.'
+                  : 'Your monthly AI allowance resets at the start of next month.'}
               </p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => setShowBuyModal(true)}
-                className="text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-              >
-                <Sparkles className="w-3 h-3" /> Buy credits
-              </button>
               {plan !== 'business' && (
                 <Link
                   to="/pricing"
@@ -524,8 +501,6 @@ export default function AiChatPanel({ currentResult }: Props) {
           </div>
         </div>
       )}
-
-      {showBuyModal && <BuyCreditsModal onClose={() => setShowBuyModal(false)} />}
 
       {/* Input — model/credits/new-chat live inside the box */}
       <div className="ai-chat-input-outer" style={{ flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
