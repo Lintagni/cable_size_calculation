@@ -39,8 +39,9 @@ export default defineConfig({
         // use the fallback; everything else hits the network and gets its own
         // prerendered file (or a real 404).
         //
-        // Keep in sync with the SPA rewrites in vercel.json.
-        navigateFallbackAllowlist: [/^\/(ai|dashboard|admin|payment-success)\/?$/],
+        // Keep in sync with the SPA rewrites in vercel.json. payment-success
+        // was dropped when the paid tiers were withdrawn.
+        navigateFallbackAllowlist: [/^\/(ai|dashboard|admin)\/?$/],
         navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
           {
